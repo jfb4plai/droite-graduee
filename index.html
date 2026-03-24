@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAI – Droite Graduée Interactive</title>
+<style>
+:root {
+  --pink: #e91e8c;
+  --dark: #1a1a1a;
+  --light: #f8f8f8;
+  --border: #ddd;
+  --green: #4caf50;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: white; border-bottom: 3px solid var(--pink);
+  padding: 8px 20px; display: flex; align-items: center; gap: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+.logo-img { height: 52px; width: auto; display: block; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+#hdr-user { font-size: .82rem; color: #888; }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── BUTTONS ── */
+.btn { padding: 9px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: .88rem; font-weight: 600; transition: opacity .15s; }
+.btn:hover { opacity: .82; }
+.btn-pink  { background: var(--pink); color: #fff; }
+.btn-grey  { background: #eee; color: var(--dark); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-sm    { padding: 4px 10px; font-size: .78rem; }
+.btn-full  { width: 100%; }
+
+/* ── LOGIN ── */
+.login-wrap { max-width: 380px; margin: 80px auto; background: white; padding: 36px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
+.login-wrap h2 { margin-bottom: 24px; font-size: 1.2rem; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: .82rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+.form-group input { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 4px; font-size: .88rem; }
+.form-group input:focus { outline: none; border-color: var(--pink); }
+.err-msg { color: red; font-size: .8rem; margin-bottom: 10px; }
+.login-hint { margin-top: 14px; font-size: .75rem; color: #999; text-align: center; }
+
+/* ── TEACHER LAYOUT ── */
+.t-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 55px); }
+.t-side { background: white; border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; }
+.t-main { padding: 18px; overflow-y: auto; }
+.side-section { background: #f9f9f9; border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 14px; }
+.side-section h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
+.act-btn { display: block; width: 100%; text-align: left; padding: 9px 12px; margin-bottom: 5px; border: 2px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-weight: 600; font-size: .85rem; }
+.act-btn.active { border-color: var(--pink); background: var(--pink); color: white; }
+.section-title { font-size: 1rem; font-weight: 700; padding-bottom: 8px; border-bottom: 2px solid var(--pink); margin-bottom: 16px; }
+.cfg-panel { display: none; }
+.cfg-panel.active { display: block; }
+.cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cfg-box { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+.cfg-box h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
+.cfg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cfg-row label { font-size: .82rem; min-width: 130px; color: #555; font-weight: 600; }
+.cfg-row input[type=number], .cfg-row select, .cfg-row input[type=text] {
+  flex: 1; padding: 6px 9px; border: 1px solid var(--border); border-radius: 4px; font-size: .85rem;
+}
+.cfg-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--pink); }
+.pieces-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 8px; }
+.piece-inp { padding: 6px; border: 1px solid var(--border); border-radius: 4px; text-align: center; font-size: .85rem; width: 100%; }
+.preview-box { background: #fafafa; border: 1px dashed var(--border); border-radius: 6px; padding: 16px 8px; margin-top: 4px; overflow-x: auto; }
+
+/* ── SAVED CONFIGS ── */
+.saved-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 5px; font-size: .8rem; }
+.saved-item .sname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+
+/* ── STUDENT ── */
+.s-wrap { max-width: 1000px; margin: 0 auto; padding: 18px; }
+.info-bar { background: #fff3f8; border: 1px solid #f8bbd0; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: .88rem; display: flex; align-items: center; gap: 8px; }
+.nl-area { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 24px 10px 30px; position: relative; overflow: visible; }
+.piece-tray { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 72px; }
+.piece-tray-label { font-size: .82rem; color: #999; }
+.s-controls { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
+.progress-txt { text-align: center; font-size: .82rem; color: #888; margin-top: 8px; }
+.feedback-msg { text-align: center; padding: 10px; font-size: 1rem; font-weight: 600; margin-top: 8px; }
+
+/* ── BLINK ── */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.blink { animation: blink .7s ease-in-out 5; }
+
+/* ── END OVERLAY ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.dialog { background: white; padding: 36px; border-radius: 12px; text-align: center; max-width: 360px; }
+.dialog h2 { color: var(--pink); font-size: 1.6rem; margin-bottom: 10px; }
+.dialog p { color: #666; margin-bottom: 20px; }
+
+.hidden { display: none !important; }
+@media(max-width:700px) { .t-layout { grid-template-columns: 1fr; } .cfg-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <img src="/logo-plai.jpg" alt="PLAI – Pôle Liégeois d'Accompagnement vers une École Inclusive" class="logo-img">
+  <div class="header-right hidden" id="hdr-ctrl">
+    <span id="hdr-user"></span>
+    <button class="btn btn-grey btn-sm" onclick="App.logout()">Déconnexion</button>
+    <button class="btn btn-pink btn-sm" id="btn-mode" onclick="App.toggleMode()">Mode élève</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════ LOGIN -->
+<div class="screen active" id="sc-login">
+  <div class="login-wrap">
+    <h2 id="l-title">Connexion Enseignant</h2>
+    <div class="form-group"><label>Email</label><input id="l-user" type="email" placeholder="prenom.nom@ecole.be"/></div>
+    <div class="form-group"><label>Mot de passe</label><input id="l-pass" type="password" placeholder="••••••"/></div>
+    <div class="err-msg hidden" id="l-err"></div>
+    <button class="btn btn-pink btn-full" id="l-login-btn" onclick="App.login()">Se connecter</button>
+    <button class="btn btn-pink btn-full hidden" id="l-signup-btn" onclick="App.signup()">Créer mon compte</button>
+    <p class="login-hint" id="l-toggle-hint">Pas encore de compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Créer un compte</a></p>
+    <p class="login-hint hidden" id="l-signin-hint">Déjà un compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Se connecter</a></p>
+    <div style="text-align:center;margin-top:14px;">
+      <button class="btn btn-grey btn-sm" onclick="App.goStudent()">Accès élève →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ TEACHER -->
+<div class="screen" id="sc-teacher">
+  <div class="t-layout">
+    <!-- Sidebar -->
+    <div class="t-side">
+      <div class="side-section">
+        <h3>Activité</h3>
+        <button class="act-btn active" id="tab1" onclick="T.selectAct(1)">① Estimation</button>
+        <button class="act-btn" id="tab2" onclick="T.selectAct(2)">② Apprentissage</button>
+        <button class="act-btn" id="tab3" onclick="T.selectAct(3)">③ Mix</button>
+      </div>
+      <div class="side-section">
+        <h3>Sauvegarder</h3>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input id="save-name" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.82rem;" placeholder="Nom…"/>
+          <button class="btn btn-pink btn-sm" onclick="T.save()" title="Sauvegarder dans le navigateur">💾</button>
+        </div>
+        <div id="saved-list"></div>
+        <!-- Export / Import fichier JSON -->
+        <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <button class="btn btn-grey btn-sm" style="flex:1;" onclick="T.exportJSON()" title="Exporter toutes les configs en fichier .json">📥 Exporter</button>
+          <button class="btn btn-grey btn-sm" style="flex:1;" onclick="$id('import-file').click()" title="Importer un fichier .json exporté">📤 Importer</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="T.importJSON(this)">
+        </div>
+      </div>
+      <button class="btn btn-green btn-full" style="padding:13px;font-size:.95rem;" onclick="T.launch()">▶ Lancer pour l'élève</button>
+    </div>
+
+    <!-- Main -->
+    <div class="t-main">
+
+      <!-- ── CONFIG ACT 1 ── -->
+      <div class="cfg-panel active" id="cfg1">
+        <div class="section-title">① Estimation sur droite graduée</div>
+        <div class="cfg-grid">
+          <div class="cfg-box">
+            <h3>Droite graduée</h3>
+            <div class="cfg-row"><label>Début</label><input type="number" id="a1-start" value="0" min="0" oninput="T.preview()"></div>
+            <div class="cfg-row"><label>Fin</label><input type="number" id="a1-end" value="10" min="1" oninput="T.preview()"></div>
+            <div class="cfg-row"><label>Pas (intervalle)</label><input type="number" id="a1-step" value="1" min="1" oninput="T.preview()"></div>
+            <div class="cfg-row"><label>Toutes les graduations</label><input type="checkbox" id="a1-allticks" checked onchange="T.toggleTicks(1);T.preview()"></div>
+            <div id="a1-cticks" class="hidden" style="margin-top:4px;">
+              <div style="font-size:.78rem;color:#999;margin-bottom:3px;">Graduations (virgule, max 10)</div>
+              <input type="text" id="a1-ticklist" placeholder="Ex: 0,2,5,10" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.82rem;" oninput="T.preview()">
+            </div>
+            <div class="cfg-row" style="margin-top:8px;"><label>Afficher les nombres</label>
+              <select id="a1-shownums" onchange="T.onShowNumsChange(1);T.preview()">
+                <option value="all">Toutes les graduations</option>
+                <option value="every">Tous les X pas</option>
+                <option value="none">Aucun</option>
+              </select>
+            </div>
+            <div class="cfg-row hidden" id="a1-everyrow"><label>Afficher tous les X pas</label><input type="number" id="a1-everyn" value="2" min="1" oninput="T.preview()"></div>
+          </div>
+          <div class="cfg-box">
+            <h3>Pièces-nombres (max 20)</h3>
+            <div style="font-size:.78rem;color:#999;margin-bottom:6px;">Nombres à faire placer par l'élève :</div>
+            <div class="pieces-grid" id="a1-pgrid"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-grey btn-sm" onclick="T.addPiece(1)">+ Ajouter</button>
+              <button class="btn btn-grey btn-sm" onclick="T.rmPiece(1)">− Retirer</button>
+            </div>
+            <div class="cfg-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+              <label>Conserver les réponses précédentes</label>
+              <input type="checkbox" id="a1-keephistory">
+            </div>
+          </div>
+        </div>
+        <div class="cfg-box" style="margin-top:14px;">
+          <h3>Aperçu droite</h3>
+          <div class="preview-box"><svg id="a1-prev" height="100" style="min-width:500px;width:100%;display:block;"></svg></div>
+        </div>
+      </div>
+
+      <!-- ── CONFIG ACT 2 ── -->
+      <div class="cfg-panel hidden" id="cfg2">
+        <div class="section-title">② Apprentissage multi-droites</div>
+        <div class="cfg-grid">
+          <div class="cfg-box">
+            <h3>Paramètres généraux</h3>
+            <div class="cfg-row"><label>Nombre de droites</label>
+              <select id="a2-nlines" onchange="T.buildA2Lines();T.preview()">
+                <option value="2">2</option><option value="3" selected>3</option><option value="4">4</option>
+              </select>
+            </div>
+            <div class="cfg-row"><label>Unité travaillée</label><input type="number" id="a2-unit" value="2" min="1" oninput="T.buildA2Lines();T.preview()"></div>
+            <div class="cfg-row"><label>Tâche élève</label>
+              <select id="a2-task">
+                <option value="place-unit">Placer 1 bloc unité par droite</option>
+                <option value="fill-steps">Remplir les pas avec le bloc unité</option>
+              </select>
+            </div>
+            <div class="cfg-row"><label>Droite 1 : début</label><input type="number" id="a2-l1start" value="0" oninput="T.preview()"></div>
+            <div class="cfg-row"><label>Droite 1 : fin</label><input type="number" id="a2-l1end" value="100" min="1" oninput="T.preview()"></div>
+            <div class="cfg-row"><label>Droite 1 : afficher nombres</label><input type="checkbox" id="a2-l1nums" checked onchange="T.preview()"></div>
+          </div>
+          <div class="cfg-box">
+            <h3>Config droites 2–4</h3>
+            <div id="a2-linescfg"></div>
+          </div>
+        </div>
+        <div class="cfg-box" style="margin-top:14px;">
+          <h3>Aperçu</h3>
+          <div class="preview-box"><svg id="a2-prev" style="min-width:500px;width:100%;display:block;"></svg></div>
+        </div>
+      </div>
+
+      <!-- ── CONFIG ACT 3 ── -->
+      <div class="cfg-panel hidden" id="cfg3">
+        <div class="section-title">③ Mix – estimation sur droites multiples</div>
+
+        <!-- Ligne 1 : référence fixe -->
+        <div class="cfg-box" style="margin-bottom:12px;background:#f0f4ff;">
+          <h3>Droite 1 – Référence (toujours 0 → 100, pas = 1)</h3>
+          <div class="cfg-row"><label>Afficher la droite 1</label><input type="checkbox" id="a3-l1-show" checked onchange="T.preview()"></div>
+          <div class="cfg-row">
+            <label>Afficher les nombres</label>
+            <select id="a3-l1-shownums" onchange="T.onA3ShowNums(1);T.preview()">
+              <option value="every" selected>Tous les X pas</option>
+              <option value="all">Toutes les graduations</option>
+              <option value="none">Aucun</option>
+            </select>
+          </div>
+          <div class="cfg-row" id="a3-l1-everyrow">
+            <label>Tous les X pas</label>
+            <input type="number" id="a3-l1-everyn" value="10" min="1" oninput="T.preview()">
+          </div>
+        </div>
+
+        <div class="cfg-row" style="margin-bottom:14px;">
+          <label style="font-size:.88rem;font-weight:700;">Droites additionnelles</label>
+          <select id="a3-nlines" onchange="T.buildA3Lines();T.preview()">
+            <option value="1">1 droite additionnelle (total 2)</option>
+            <option value="2" selected>2 droites additionnelles (total 3)</option>
+            <option value="3">3 droites additionnelles (total 4)</option>
+          </select>
+        </div>
+
+        <!-- Config dynamique des droites 2-4 (même options qu'Estimation) -->
+        <div id="a3-linescfg"></div>
+
+        <!-- Nombres à placer -->
+        <div class="cfg-box" style="margin-top:12px;">
+          <h3>Nombres à placer (max 20) – 1 pièce par droite additionnelle</h3>
+          <div class="pieces-grid" id="a3-pgrid"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-grey btn-sm" onclick="T.addPiece(3)">+ Ajouter</button>
+            <button class="btn btn-grey btn-sm" onclick="T.rmPiece(3)">− Retirer</button>
+          </div>
+          <div class="cfg-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+            <label>Conserver les réponses précédentes</label>
+            <input type="checkbox" id="a3-keephistory">
+          </div>
+        </div>
+
+        <div class="cfg-box" style="margin-top:14px;">
+          <h3>Aperçu</h3>
+          <div class="preview-box"><svg id="a3-prev" style="min-width:500px;width:100%;display:block;"></svg></div>
+        </div>
+      </div>
+
+    </div><!-- /t-main -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STUDENT -->
+<div class="screen" id="sc-student">
+  <div class="s-wrap">
+
+    <!-- ACT 1 -->
+    <div id="s1" class="hidden">
+      <div class="info-bar">🎯 <span id="s1-info">Positionne la pièce sur la droite</span></div>
+      <div class="piece-tray">
+        <span class="piece-tray-label">Pièce :</span>
+        <svg id="s1-tray" width="70" height="65"></svg>
+      </div>
+      <div class="nl-area" id="s1-nlarea">
+        <svg id="s1-svg" width="100%" height="130" style="display:block;overflow:visible;"></svg>
+      </div>
+      <div class="feedback-msg hidden" id="s1-fb"></div>
+      <div class="s-controls">
+        <button class="btn btn-pink" id="s1-validate" onclick="A1.validate()">✓ Valider</button>
+        <button class="btn btn-grey hidden" id="s1-next" onclick="A1.next()">Suivant →</button>
+      </div>
+      <div class="progress-txt" id="s1-prog"></div>
+    </div>
+
+    <!-- ACT 2 -->
+    <div id="s2" class="hidden">
+      <div class="piece-tray" id="s2-tray">
+        <span class="piece-tray-label">Blocs unité disponibles :</span>
+      </div>
+      <div class="nl-area" id="s2-nlarea">
+        <svg id="s2-svg" width="100%" style="display:block;overflow:visible;"></svg>
+      </div>
+      <div class="s-controls">
+        <button class="btn btn-green" onclick="A2.finish()">✓ Terminer</button>
+        <button class="btn btn-grey" onclick="A2.reset()">↺ Recommencer</button>
+      </div>
+    </div>
+
+    <!-- ACT 3 -->
+    <div id="s3" class="hidden">
+      <div class="info-bar">🎯 <span id="s3-info">Place les 3 pièces sur chaque droite</span></div>
+      <div class="piece-tray" id="s3-tray">
+        <span class="piece-tray-label">Pièces :</span>
+        <!-- pièces injectées dynamiquement -->
+      </div>
+      <div class="nl-area" id="s3-nlarea">
+        <svg id="s3-svg" width="100%" style="display:block;overflow:visible;"></svg>
+      </div>
+      <div class="feedback-msg hidden" id="s3-fb"></div>
+      <div class="s-controls">
+        <button class="btn btn-pink" id="s3-validate" onclick="A3.validate()">✓ Valider</button>
+        <button class="btn btn-grey hidden" id="s3-next" onclick="A3.next()">Suivant →</button>
+      </div>
+      <div class="progress-txt" id="s3-prog"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- End overlay -->
+<div class="overlay hidden" id="end-overlay">
+  <div class="dialog">
+    <div style="font-size:2.5rem;margin-bottom:10px;">🎉</div>
+    <h2>Bravo !</h2>
+    <p>Tu as terminé l'exercice !</p>
+    <button class="btn btn-pink" onclick="document.getElementById('end-overlay').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
