@@ -117,15 +117,28 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
   <div class="login-wrap">
     <h2 id="l-title">Connexion Enseignant</h2>
     <div class="form-group"><label>Email</label><input id="l-user" type="email" placeholder="prenom.nom@ecole.be"/></div>
-    <div class="form-group"><label>Mot de passe</label><input id="l-pass" type="password" placeholder="••••••"/></div>
+    <div class="form-group" id="l-pwd-group"><label>Mot de passe</label><input id="l-pass" type="password" placeholder="••••••"/></div>
     <div class="err-msg hidden" id="l-err"></div>
     <button class="btn btn-pink btn-full" id="l-login-btn" onclick="App.login()">Se connecter</button>
     <button class="btn btn-pink btn-full hidden" id="l-signup-btn" onclick="App.signup()">Créer mon compte</button>
+    <button class="btn btn-pink btn-full hidden" id="l-reset-btn" onclick="App.sendReset()">Envoyer le lien</button>
     <p class="login-hint" id="l-toggle-hint">Pas encore de compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Créer un compte</a></p>
     <p class="login-hint hidden" id="l-signin-hint">Déjà un compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Se connecter</a></p>
+    <p class="login-hint" id="l-forgot-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink);">Mot de passe oublié ?</a></p>
+    <p class="login-hint hidden" id="l-reset-cancel-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink);">← Retour à la connexion</a></p>
     <div style="text-align:center;margin-top:14px;">
       <button class="btn btn-grey btn-sm" onclick="App.goStudent()">Accès élève →</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ RECOVERY -->
+<div class="screen" id="sc-recovery">
+  <div class="login-wrap">
+    <h2>Nouveau mot de passe</h2>
+    <div class="form-group"><label>Nouveau mot de passe</label><input id="r-pass" type="password" placeholder="6 caractères min."/></div>
+    <div class="err-msg hidden" id="r-err"></div>
+    <button class="btn btn-pink btn-full" onclick="App.updatePassword()">Enregistrer</button>
   </div>
 </div>
 

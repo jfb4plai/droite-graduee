@@ -23,6 +23,8 @@ const App = {
   userId: null,
   mode: 'teacher',
   _signupMode: false,
+  _resetMode: false,
+  passwordRecovery: false,
 
   async init(){
     // Vérifier la session existante
@@ -35,12 +37,17 @@ const App = {
 
     // Écouter les changements d'authentification
     supabase.auth.onAuthStateChange((event, session) => {
+      if(event === 'PASSWORD_RECOVERY'){
+        this.passwordRecovery = true;
+        this._show('sc-recovery');
+        return;
+      }
       if(event === 'INITIAL_SESSION') return;
-      if(session?.user){
+      if(session?.user && !this.passwordRecovery){
         this.user = session.user.email;
         this.userId = session.user.id;
         this._showTeacher();
-      } else {
+      } else if(!session?.user){
         this.user = null;
         this.userId = null;
         this._show('sc-login');
@@ -78,6 +85,34 @@ const App = {
     errEl.classList.remove('hidden');
   },
 
+  async sendReset(){
+    const email = $id('l-user').value.trim();
+    if(!email){ this._err('Entrez votre email.'); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    const errEl = $id('l-err');
+    if(error){ this._err(error.message); return; }
+    errEl.style.color = '#4caf50';
+    errEl.textContent = 'Email envoyé ! Vérifiez votre boîte mail pour créer un nouveau mot de passe.';
+    errEl.classList.remove('hidden');
+  },
+
+  async updatePassword(){
+    const p = $id('r-pass').value.trim();
+    const errEl = $id('r-err');
+    if(p.length < 6){ errEl.textContent='6 caractères minimum.'; errEl.style.color='red'; errEl.classList.remove('hidden'); return; }
+    const { error } = await supabase.auth.updateUser({ password: p });
+    if(error){ errEl.textContent=error.message; errEl.style.color='red'; errEl.classList.remove('hidden'); return; }
+    this.passwordRecovery = false;
+    const { data: { session } } = await supabase.auth.getSession();
+    if(session?.user){
+      this.user = session.user.email;
+      this.userId = session.user.id;
+    }
+    this._showTeacher();
+  },
+
   async logout(){
     await supabase.auth.signOut();
   },
@@ -102,21 +137,54 @@ const App = {
 
   toggleSignup(){
     this._signupMode = !this._signupMode;
+    this._resetMode = false;
     const errEl = $id('l-err');
     errEl.classList.add('hidden');
     errEl.style.color = 'red';
+    $id('l-pwd-group').classList.remove('hidden');
+    $id('l-reset-btn').classList.add('hidden');
+    $id('l-forgot-hint').classList.remove('hidden');
+    $id('l-reset-cancel-hint').classList.add('hidden');
     if(this._signupMode){
       $id('l-title').textContent = 'Créer un compte';
       $id('l-login-btn').classList.add('hidden');
       $id('l-signup-btn').classList.remove('hidden');
       $id('l-toggle-hint').classList.add('hidden');
       $id('l-signin-hint').classList.remove('hidden');
+      $id('l-forgot-hint').classList.add('hidden');
     } else {
       $id('l-title').textContent = 'Connexion Enseignant';
       $id('l-login-btn').classList.remove('hidden');
       $id('l-signup-btn').classList.add('hidden');
       $id('l-toggle-hint').classList.remove('hidden');
       $id('l-signin-hint').classList.add('hidden');
+    }
+  },
+
+  toggleReset(){
+    this._resetMode = !this._resetMode;
+    this._signupMode = false;
+    const errEl = $id('l-err');
+    errEl.classList.add('hidden');
+    errEl.style.color = 'red';
+    $id('l-toggle-hint').classList.add('hidden');
+    $id('l-signin-hint').classList.add('hidden');
+    if(this._resetMode){
+      $id('l-title').textContent = 'Mot de passe oublié';
+      $id('l-pwd-group').classList.add('hidden');
+      $id('l-login-btn').classList.add('hidden');
+      $id('l-signup-btn').classList.add('hidden');
+      $id('l-reset-btn').classList.remove('hidden');
+      $id('l-forgot-hint').classList.add('hidden');
+      $id('l-reset-cancel-hint').classList.remove('hidden');
+    } else {
+      $id('l-title').textContent = 'Connexion Enseignant';
+      $id('l-pwd-group').classList.remove('hidden');
+      $id('l-login-btn').classList.remove('hidden');
+      $id('l-reset-btn').classList.add('hidden');
+      $id('l-toggle-hint').classList.remove('hidden');
+      $id('l-forgot-hint').classList.remove('hidden');
+      $id('l-reset-cancel-hint').classList.add('hidden');
     }
   },
 
