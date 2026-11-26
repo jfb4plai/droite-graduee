@@ -275,14 +275,22 @@ const NL = {
       if(!ticks.includes(end))   ticks.push(end);
     }
 
-    ticks.forEach(v=>{
+    // « Toutes les graduations » : si les nombres se chevauchent, n'en afficher qu'un sur k (k calculé sur la largeur réelle)
+    let skipK = 1;
+    if(showNums === 'all' && showTicks === 'all' && ticks.length > 1){
+      const maxLen = Math.max(...ticks.map(t=>String(t).length));
+      const spacing = lw * step / (end - start);
+      skipK = Math.max(1, Math.ceil((maxLen * 10 + 8) / spacing));
+    }
+
+    ticks.forEach((v, ti)=>{
       const x = this.v2x(v, start, end, ml, lw);
       const isEnd = (v===start||v===end);
       const th = isEnd ? 14 : 8;
       svg.appendChild(svgEl('line',{x1:x,y1:y-th,x2:x,y2:y+th,stroke:'#333','stroke-width': isEnd?'2':'1.5'}));
 
       let show = false;
-      if(showNums === 'all') show = true;
+      if(showNums === 'all') show = (ti % skipK === 0);
       else if(showNums === 'every'){
         const idx = Math.round((v-start)/step);
         show = (idx % (everyN||1) === 0);
