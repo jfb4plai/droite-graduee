@@ -624,6 +624,7 @@ const T = {
   async save(){
     const name = $id('save-name').value.trim();
     if(!name){ alert('Entrez un nom.'); return; }
+    if(name.length > 80){ alert('Nom trop long (80 caractères maximum).'); return; }
     if(!App.user) return;
     await App.saveCfg(name, {
       act: this.act,
@@ -640,16 +641,22 @@ const T = {
     const store = await App.cfgStore();
     const cont = $id('saved-list');
     cont.innerHTML='';
+    // Éléments créés un par un (textContent + addEventListener) : un nom ne peut pas injecter de HTML ni de code
     Object.keys(store).forEach(name=>{
-      cont.insertAdjacentHTML('beforeend',`
-        <div class="saved-item">
-          <span class="sname" title="${name}">${name}</span>
-          <div style="display:flex;gap:4px;">
-            <button class="btn btn-grey btn-sm" onclick="T.load('${name}')">↓</button>
-            <button class="btn btn-sm" style="background:#fdd;color:#b00020;" onclick="T.del('${name}')">✕</button>
-          </div>
-        </div>
-      `);
+      const item = document.createElement('div'); item.className='saved-item';
+      const label = document.createElement('span'); label.className='sname'; label.title=name; label.textContent=name;
+      const box = document.createElement('div'); box.style.cssText='display:flex;gap:4px;';
+      const bLoad = document.createElement('button');
+      bLoad.className='btn btn-grey btn-sm'; bLoad.textContent='↓';
+      bLoad.setAttribute('aria-label', 'Charger la configuration ' + name);
+      bLoad.addEventListener('click', ()=>this.load(name));
+      const bDel = document.createElement('button');
+      bDel.className='btn btn-sm'; bDel.style.cssText='background:#fdd;color:#b00020;'; bDel.textContent='✕';
+      bDel.setAttribute('aria-label', 'Supprimer la configuration ' + name);
+      bDel.addEventListener('click', ()=>this.del(name));
+      box.append(bLoad, bDel);
+      item.append(label, box);
+      cont.appendChild(item);
     });
   },
 
@@ -711,8 +718,10 @@ const T = {
         if(!data.configs || typeof data.configs !== 'object')
           throw new Error('Format invalide');
         const store = await App.cfgStore();
-        let count = 0;
+        let count = 0, ignorees = 0;
         for(const [name, cfg] of Object.entries(data.configs)){
+          // Contrôle du fichier : nom court, configuration = objet (rien d'autre n'est enregistré)
+          if(!name.trim() || name.length > 80 || !cfg || typeof cfg !== 'object' || Array.isArray(cfg)){ ignorees++; continue; }
           if(store[name]){
             if(!confirm(`La config "${name}" existe déjà. Remplacer ?`)) continue;
           }
@@ -720,13 +729,36 @@ const T = {
           count++;
         }
         await this.loadSaved();
-        alert(`${count} configuration(s) importée(s) avec succès.`);
+        alert(`${count} configuration(s) importée(s) avec succès.` + (ignorees ? ` ${ignorees} ignorée(s) : nom vide ou trop long (plus de 80 caractères), ou contenu invalide.` : ''));
       } catch(err) {
         alert('Fichier invalide : ' + err.message);
       }
       input.value = '';
     };
     reader.readAsText(file);
+  },
+
+  // Lit les cases brutes (une case vide ou illisible n'est pas remplacée par une valeur par défaut) et renvoie un message ou null
+  _cfgError(act){
+    const num = id => { const v = $id(id)?.value; return (v==null || v==='') ? NaN : parseFloat(v); };
+    const chk = (label, s, e, st) => {
+      if([s,e,st].some(Number.isNaN)) return `${label} : remplir le début, la fin et le pas.`;
+      if(!(s < e)) return `${label} : le début doit être inférieur à la fin.`;
+      if(!(st > 0)) return `${label} : le pas doit être supérieur à 0.`;
+      if(st > e - s) return `${label} : le pas est plus grand que la longueur de la droite.`;
+      return null;
+    };
+    if(act===1) return chk('Droite', num('a1-start'), num('a1-end'), num('a1-step'));
+    if(act===2){
+      const n = parseInt($id('a2-nlines').value)||3;
+      let m = chk('Droite 1', num('a2-l1start'), num('a2-l1end'), 1);
+      for(let i=2; i<=n && !m; i++) m = chk('Droite '+i, num(`a2-l${i}start`), num(`a2-l${i}end`), num(`a2-l${i}step`));
+      return m;
+    }
+    const nAdd = parseInt($id('a3-nlines').value)||2;
+    let m = null;
+    for(let i=2; i<=nAdd+1 && !m; i++) m = chk('Droite '+i, num(`a3-l${i}-start`), num(`a3-l${i}-end`), num(`a3-l${i}-step`));
+    return m;
   },
 
   launch(){
@@ -740,6 +772,9 @@ const T = {
       $id('a'+act+'-pgrid').querySelector('input')?.focus();
       return;
     }
+    // Droites : valeurs complètes et cohérentes, sinon la droite ne se dessine pas ou des valeurs sont remplacées sans prévenir
+    const msg = this._cfgError(act);
+    if(msg){ err.textContent=msg; err.classList.remove('hidden'); return; }
     ['s1','s2','s3'].forEach(id=>$id(id).classList.add('hidden'));
     App.mode='student';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1083,7 +1118,7 @@ const A2 = {
       case 'End':  v=max; break;
       case 'Enter': case ' ':
         e.preventDefault();
-        if(this.kb[i]>=100) return;
+        if(this.kb[i] >= this.linesInfo[i].end) return;
         this.placements[i].push(this.kb[i]);
         this.kb[i]=Math.min(this.kb[i]+u, max);
         this._renderPlaced($id('s2-svg'));
@@ -1183,7 +1218,7 @@ const A2 = {
     if(best<0) return;
     const li=this.linesInfo[best];
     const v=NL.x2v(sx, li.start, li.end, li.ml, li.lw, this.cfg.unit);
-    if(v >= 100) return;
+    if(v >= li.end) return;
     this.placements[best].push(v);
     this._renderPlaced(svg);
   },

@@ -166,7 +166,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
       <div class="side-section">
         <h3>Sauvegarder</h3>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <input id="save-name" aria-label="Nom de la configuration à sauvegarder" style="flex:1;min-width:0;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" placeholder="Nom…"/>
+          <input id="save-name" maxlength="80" aria-label="Nom de la configuration à sauvegarder" style="flex:1;min-width:0;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" placeholder="Nom…"/>
           <button class="btn btn-pink btn-sm" onclick="T.save()" title="Sauvegarder dans le navigateur" aria-label="Sauvegarder la configuration">💾</button>
         </div>
         <div id="saved-list"></div>
