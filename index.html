@@ -23,67 +23,74 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 }
 .logo-img { height: 52px; width: auto; display: block; }
 .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-#hdr-user { font-size: .82rem; color: #888; }
+#hdr-user { font-size: 1rem; color: #595959; }
+
+/* ── ACCESSIBILITÉ : focus visible partout ── */
+:focus-visible { outline: 3px solid #0f6e56; outline-offset: 2px; }
+.piece-draggable:focus-visible { outline: 3px solid #0f6e56; outline-offset: 4px; }
+.tray-sel { outline: 3px solid var(--pink); outline-offset: 3px; border-radius: 6px; }
 
 /* ── SCREENS ── */
 .screen { display: none; }
 .screen.active { display: block; }
 
 /* ── BUTTONS ── */
-.btn { padding: 9px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: .88rem; font-weight: 600; transition: opacity .15s; }
+.btn { padding: 9px 18px; min-height: 44px; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s; }
 .btn:hover { opacity: .82; }
 .btn-pink  { background: var(--pink); color: #fff; }
 .btn-grey  { background: #eee; color: var(--dark); }
 .btn-green { background: var(--green); color: #fff; }
-.btn-sm    { padding: 4px 10px; font-size: .78rem; }
+.btn-sm    { padding: 8px 14px; min-height: 44px; min-width: 44px; font-size: 1rem; }
 .btn-full  { width: 100%; }
 
 /* ── LOGIN ── */
 .login-wrap { max-width: 380px; margin: 80px auto; background: white; padding: 36px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
 .login-wrap h2 { margin-bottom: 24px; font-size: 1.2rem; }
 .form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: .82rem; font-weight: 600; color: #555; margin-bottom: 4px; }
-.form-group input { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 4px; font-size: .88rem; }
-.form-group input:focus { outline: none; border-color: var(--pink); }
-.err-msg { color: red; font-size: .8rem; margin-bottom: 10px; }
-.login-hint { margin-top: 14px; font-size: .75rem; color: #999; text-align: center; }
+.form-group label { display: block; font-size: 1rem; font-weight: 600; color: #444; margin-bottom: 4px; }
+.form-group input { width: 100%; padding: 8px 11px; min-height: 44px; border: 1px solid #767676; border-radius: 4px; font-size: 1rem; }
+.form-group input:focus { border-color: var(--pink); }
+.err-msg { color: #b00020; font-size: 1rem; font-weight: 600; margin-bottom: 10px; }
+.login-hint { margin-top: 14px; font-size: 1rem; color: #595959; text-align: center; }
+.login-hint a { display: inline-block; padding: 12px 6px; min-height: 44px; }
 
 /* ── TEACHER LAYOUT ── */
-.t-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 55px); }
+.t-layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 55px); }
 .t-side { background: white; border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; }
 .t-main { padding: 18px; overflow-y: auto; }
 .side-section { background: #f9f9f9; border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 14px; }
-.side-section h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
-.act-btn { display: block; width: 100%; text-align: left; padding: 9px 12px; margin-bottom: 5px; border: 2px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-weight: 600; font-size: .85rem; }
+.side-section h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .5px; color: #595959; margin-bottom: 10px; }
+.act-btn { display: block; width: 100%; text-align: left; padding: 9px 12px; min-height: 44px; margin-bottom: 5px; border: 2px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-weight: 600; font-size: 1rem; }
 .act-btn.active { border-color: var(--pink); background: var(--pink); color: white; }
 .section-title { font-size: 1rem; font-weight: 700; padding-bottom: 8px; border-bottom: 2px solid var(--pink); margin-bottom: 16px; }
 .cfg-panel { display: none; }
 .cfg-panel.active { display: block; }
 .cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .cfg-box { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
-.cfg-box h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
-.cfg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.cfg-row label { font-size: .82rem; min-width: 130px; color: #555; font-weight: 600; }
+.cfg-box h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .5px; color: #595959; margin-bottom: 10px; }
+.cfg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-height: 44px; }
+.cfg-row label { font-size: 1rem; min-width: 130px; color: #444; font-weight: 600; }
 .cfg-row input[type=number], .cfg-row select, .cfg-row input[type=text] {
-  flex: 1; padding: 6px 9px; border: 1px solid var(--border); border-radius: 4px; font-size: .85rem;
+  flex: 1; padding: 6px 9px; min-height: 44px; border: 1px solid #767676; border-radius: 4px; font-size: 1rem;
 }
-.cfg-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--pink); }
+.cfg-row input[type=checkbox] { width: 28px; height: 28px; accent-color: var(--pink); }
 .pieces-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 8px; }
-.piece-inp { padding: 6px; border: 1px solid var(--border); border-radius: 4px; text-align: center; font-size: .85rem; width: 100%; }
+.piece-inp { padding: 6px; min-height: 44px; border: 1px solid #767676; border-radius: 4px; text-align: center; font-size: 1rem; width: 100%; }
+.t-hint { font-size: 1rem; color: #595959; margin-bottom: 6px; }
 .preview-box { background: #fafafa; border: 1px dashed var(--border); border-radius: 6px; padding: 16px 8px; margin-top: 4px; overflow-x: auto; }
 
 /* ── SAVED CONFIGS ── */
-.saved-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 5px; font-size: .8rem; }
+.saved-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 5px; font-size: 1rem; }
 .saved-item .sname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
 
 /* ── STUDENT ── */
 .s-wrap { max-width: 1000px; margin: 0 auto; padding: 18px; }
-.info-bar { background: #fff3f8; border: 1px solid #f8bbd0; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: .88rem; display: flex; align-items: center; gap: 8px; }
+.info-bar { background: #fff3f8; border: 1px solid #f8bbd0; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 1.125rem; display: flex; align-items: center; gap: 8px; }
 .nl-area { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 24px 10px 30px; position: relative; overflow: visible; }
 .piece-tray { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 72px; }
-.piece-tray-label { font-size: .82rem; color: #999; }
+.piece-tray-label { font-size: 1rem; color: #595959; }
 .s-controls { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
-.progress-txt { text-align: center; font-size: .82rem; color: #888; margin-top: 8px; }
+.progress-txt { text-align: center; font-size: 1rem; color: #595959; margin-top: 8px; }
 .feedback-msg { text-align: center; padding: 10px; font-size: 1rem; font-weight: 600; margin-top: 8px; }
 
 /* ── BLINK ── */
@@ -116,8 +123,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 <div class="screen active" id="sc-login">
   <div class="login-wrap">
     <h2 id="l-title">Connexion Enseignant</h2>
-    <div class="form-group"><label>Email</label><input id="l-user" type="email" placeholder="prenom.nom@ecole.be"/></div>
-    <div class="form-group" id="l-pwd-group"><label>Mot de passe</label><input id="l-pass" type="password" placeholder="••••••"/></div>
+    <div class="form-group"><label for="l-user">Email</label><input id="l-user" type="email" placeholder="prenom.nom@ecole.be"/></div>
+    <div class="form-group" id="l-pwd-group"><label for="l-pass">Mot de passe</label><input id="l-pass" type="password" placeholder="••••••"/></div>
     <div class="err-msg hidden" id="l-err"></div>
     <button class="btn btn-pink btn-full" id="l-login-btn" onclick="App.login()">Se connecter</button>
     <button class="btn btn-pink btn-full hidden" id="l-signup-btn" onclick="App.signup()">Créer mon compte</button>
@@ -136,7 +143,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 <div class="screen" id="sc-recovery">
   <div class="login-wrap">
     <h2>Nouveau mot de passe</h2>
-    <div class="form-group"><label>Nouveau mot de passe</label><input id="r-pass" type="password" placeholder="6 caractères min."/></div>
+    <div class="form-group"><label for="r-pass">Nouveau mot de passe</label><input id="r-pass" type="password" placeholder="6 caractères min."/></div>
     <div class="err-msg hidden" id="r-err"></div>
     <button class="btn btn-pink btn-full" onclick="App.updatePassword()">Enregistrer</button>
   </div>
@@ -156,8 +163,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
       <div class="side-section">
         <h3>Sauvegarder</h3>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <input id="save-name" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.82rem;" placeholder="Nom…"/>
-          <button class="btn btn-pink btn-sm" onclick="T.save()" title="Sauvegarder dans le navigateur">💾</button>
+          <input id="save-name" aria-label="Nom de la configuration à sauvegarder" style="flex:1;min-width:0;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" placeholder="Nom…"/>
+          <button class="btn btn-pink btn-sm" onclick="T.save()" title="Sauvegarder dans le navigateur" aria-label="Sauvegarder la configuration">💾</button>
         </div>
         <div id="saved-list"></div>
         <!-- Export / Import fichier JSON -->
@@ -167,7 +174,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="T.importJSON(this)">
         </div>
       </div>
-      <button class="btn btn-green btn-full" style="padding:13px;font-size:.95rem;" onclick="T.launch()">▶ Lancer pour l'élève</button>
+      <div class="err-msg hidden" id="t-err" role="alert"></div>
+      <button class="btn btn-green btn-full" style="padding:13px;font-size:1rem;" onclick="T.launch()">▶ Lancer pour l'élève</button>
     </div>
 
     <!-- Main -->
@@ -184,8 +192,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
             <div class="cfg-row"><label>Pas (intervalle)</label><input type="number" id="a1-step" value="1" min="1" oninput="T.preview()"></div>
             <div class="cfg-row"><label>Toutes les graduations</label><input type="checkbox" id="a1-allticks" checked onchange="T.toggleTicks(1);T.preview()"></div>
             <div id="a1-cticks" class="hidden" style="margin-top:4px;">
-              <div style="font-size:.78rem;color:#999;margin-bottom:3px;">Graduations (virgule, max 10)</div>
-              <input type="text" id="a1-ticklist" placeholder="Ex: 0,2,5,10" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.82rem;" oninput="T.preview()">
+              <label for="a1-ticklist" class="t-hint" style="display:block;">Graduations (virgule, max 10)</label>
+              <input type="text" id="a1-ticklist" placeholder="Ex: 0,2,5,10" style="width:100%;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" oninput="T.preview()">
             </div>
             <div class="cfg-row" style="margin-top:8px;"><label>Afficher les nombres</label>
               <select id="a1-shownums" onchange="T.onShowNumsChange(1);T.preview()">
@@ -198,7 +206,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
           </div>
           <div class="cfg-box">
             <h3>Pièces-nombres (max 20)</h3>
-            <div style="font-size:.78rem;color:#999;margin-bottom:6px;">Nombres à faire placer par l'élève :</div>
+            <div class="t-hint">Nombres à faire placer par l'élève (au moins un) :</div>
             <div class="pieces-grid" id="a1-pgrid"></div>
             <div style="display:flex;gap:8px;margin-top:8px;">
               <button class="btn btn-grey btn-sm" onclick="T.addPiece(1)">+ Ajouter</button>
@@ -272,7 +280,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
         </div>
 
         <div class="cfg-row" style="margin-bottom:14px;">
-          <label style="font-size:.88rem;font-weight:700;">Droites additionnelles</label>
+          <label for="a3-nlines" style="font-size:1rem;font-weight:700;">Droites additionnelles</label>
           <select id="a3-nlines" onchange="T.buildA3Lines();T.preview()">
             <option value="1">1 droite additionnelle (total 2)</option>
             <option value="2" selected>2 droites additionnelles (total 3)</option>
@@ -313,15 +321,15 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 
     <!-- ACT 1 -->
     <div id="s1" class="hidden">
-      <div class="info-bar">🎯 <span id="s1-info">Positionne la pièce sur la droite</span></div>
+      <div class="info-bar">🎯 <span id="s1-info" aria-live="polite">Positionne la pièce sur la droite</span></div>
       <div class="piece-tray">
-        <span class="piece-tray-label">Pièce :</span>
+        <span class="piece-tray-label">Pièce. Glisser la pièce, ou cliquer la droite, ou utiliser les flèches gauche et droite :</span>
         <svg id="s1-tray" width="70" height="65"></svg>
       </div>
       <div class="nl-area" id="s1-nlarea">
-        <svg id="s1-svg" width="100%" height="130" style="display:block;overflow:visible;"></svg>
+        <svg id="s1-svg" role="group" aria-label="Droite graduée" width="100%" height="130" style="display:block;overflow:visible;"></svg>
       </div>
-      <div class="feedback-msg hidden" id="s1-fb"></div>
+      <div class="feedback-msg hidden" id="s1-fb" role="status"></div>
       <div class="s-controls">
         <button class="btn btn-pink" id="s1-validate" onclick="A1.validate()">✓ Valider</button>
         <button class="btn btn-grey hidden" id="s1-next" onclick="A1.next()">Suivant →</button>
@@ -332,7 +340,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
     <!-- ACT 2 -->
     <div id="s2" class="hidden">
       <div class="piece-tray" id="s2-tray">
-        <span class="piece-tray-label">Blocs unité disponibles :</span>
+        <span class="piece-tray-label">Blocs unité disponibles. Glisser un bloc sur une droite, ou cliquer un bloc puis cliquer une droite :</span>
       </div>
       <div class="nl-area" id="s2-nlarea">
         <svg id="s2-svg" width="100%" style="display:block;overflow:visible;"></svg>
@@ -347,13 +355,13 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
     <div id="s3" class="hidden">
       <div class="info-bar">🎯 <span id="s3-info">Place les 3 pièces sur chaque droite</span></div>
       <div class="piece-tray" id="s3-tray">
-        <span class="piece-tray-label">Pièces :</span>
+        <span class="piece-tray-label">Pièces. Glisser une pièce sur une droite, ou cliquer une pièce puis cliquer une droite :</span>
         <!-- pièces injectées dynamiquement -->
       </div>
       <div class="nl-area" id="s3-nlarea">
         <svg id="s3-svg" width="100%" style="display:block;overflow:visible;"></svg>
       </div>
-      <div class="feedback-msg hidden" id="s3-fb"></div>
+      <div class="feedback-msg hidden" id="s3-fb" role="status"></div>
       <div class="s-controls">
         <button class="btn btn-pink" id="s3-validate" onclick="A3.validate()">✓ Valider</button>
         <button class="btn btn-grey hidden" id="s3-next" onclick="A3.next()">Suivant →</button>

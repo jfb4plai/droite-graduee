@@ -14,6 +14,14 @@ function svgEl(tag, attrs){
 function snap(val, step){ return Math.round(val / step) * step; }
 function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 function round3(v){ return Math.round(v * 1000) / 1000; }
+// Associe chaque <label> d'une ligne de configuration à son champ (lecteur d'écran + zone de clic élargie)
+function labelize(){
+  document.querySelectorAll('.cfg-row').forEach(row=>{
+    const lab = row.querySelector('label:not([for])');
+    const ctl = row.querySelector('input[id],select[id]');
+    if(lab && ctl) lab.htmlFor = ctl.id;
+  });
+}
 
 // ─────────────────────────────────────────────────
 // APP SHELL
@@ -250,7 +258,7 @@ const NL = {
     const lw = svgW - ml - mr;
 
     if(label){
-      const t = svgEl('text',{x:ml, y:y-18, 'font-size':'11','font-family':'Segoe UI,Arial',fill:'#999'});
+      const t = svgEl('text',{x:ml, y:y-18, 'font-size':'16','font-family':'Segoe UI,Arial',fill:'#595959'});
       t.textContent = label;
       svg.appendChild(t);
     }
@@ -282,7 +290,7 @@ const NL = {
         show = (idx % (everyN||1) === 0);
       }
       if(show){
-        const t = svgEl('text',{x,y:y+26,'text-anchor':'middle','font-size':'12','font-family':'Segoe UI,Arial',fill:'#333'});
+        const t = svgEl('text',{x,y:y+28,'text-anchor':'middle','font-size':'16','font-family':'Segoe UI,Arial',fill:'#333'});
         t.textContent = v;
         svg.appendChild(t);
       }
@@ -313,7 +321,8 @@ const PR = {
       points:`${cx-w/2},${cy+hr} ${cx+w/2},${cy+hr} ${cx},${cy+hr+ht}`,
       fill, stroke,'stroke-width':'2.5','stroke-linejoin':'round'
     }));
-    const fs = String(value).length > 2 ? '12' : '15';
+    const len = String(value).length;
+    const fs = len <= 2 ? '18' : len === 3 ? '16' : '14';
     const t = svgEl('text',{x:cx,y:cy+hr/2+5.5,'text-anchor':'middle','font-size':fs,'font-weight':'bold',fill:stroke,'font-family':'Segoe UI,Arial','pointer-events':'none'});
     t.textContent = value;
     g.appendChild(t);
@@ -365,6 +374,8 @@ const T = {
     const i = document.createElement('input');
     i.type='number'; i.className='piece-inp';
     i.placeholder='Nbr '+(idx); i.min='0';
+    i.setAttribute('aria-label','Nombre à placer numéro '+idx);
+    i.addEventListener('input', ()=>$id('t-err')?.classList.add('hidden'));
     return i;
   },
 
@@ -467,6 +478,7 @@ const T = {
           <input type="checkbox" id="a2-l${i}nums" checked onchange="T.preview()"></div>
       `);
     }
+    labelize();
     this.preview();
   },
 
@@ -489,9 +501,9 @@ const T = {
             <input type="checkbox" id="a3-l${i}-allticks" checked
               onchange="T.toggleA3Ticks(${i});T.preview()"></div>
           <div id="a3-l${i}-cticks" class="hidden" style="margin-bottom:6px;">
-            <div style="font-size:.75rem;color:#999;margin-bottom:2px;">Graduations (virgule, max 10)</div>
+            <label for="a3-l${i}-ticklist" class="t-hint" style="display:block;">Graduations (virgule, max 10)</label>
             <input type="text" id="a3-l${i}-ticklist" placeholder="Ex: 0,25,50,75,100"
-              style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:.82rem;"
+              style="width:100%;padding:5px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;"
               oninput="T.preview()">
           </div>
           <div class="cfg-row"><label>Afficher les nombres</label>
@@ -506,6 +518,7 @@ const T = {
         </div>
       `);
     }
+    labelize();
     this.preview();
   },
 
@@ -670,8 +683,17 @@ const T = {
   },
 
   launch(){
-    ['s1','s2','s3'].forEach(id=>$id(id).classList.add('hidden'));
     const act=this.act;
+    const err=$id('t-err');
+    err.classList.add('hidden');
+    // Activités 1 et 3 : au moins un nombre à placer, sinon l'élève arrive sur un écran vide
+    if((act===1 || act===3) && !this.getPieces(act).length){
+      err.textContent='Aucun nombre à placer. Écrire au moins un nombre dans les cases « Nombre à placer » avant de lancer.';
+      err.classList.remove('hidden');
+      $id('a'+act+'-pgrid').querySelector('input')?.focus();
+      return;
+    }
+    ['s1','s2','s3'].forEach(id=>$id(id).classList.add('hidden'));
     App.mode='student';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     $id('sc-student').classList.add('active');
@@ -752,8 +774,64 @@ const A1 = {
     const g = PR.make(val, x, topY);
     g.classList.add('piece-draggable');
     g.style.cursor='grab';
+    this._a11yPiece(g, val);
     this._bindDrag(g, svg, li);
+    this._bindClick(svg, li, g);
     svg.appendChild(g);
+  },
+
+  // Pièce utilisable au clavier : curseur (slider) avec flèches, Début, Fin, Page haut/bas
+  _a11yPiece(g, val){
+    g.setAttribute('tabindex','0');
+    g.setAttribute('role','slider');
+    g.setAttribute('aria-label',`Pièce ${val} : position sur la droite`);
+    g.setAttribute('aria-orientation','horizontal');
+    g.setAttribute('aria-valuemin', this.li.start);
+    g.setAttribute('aria-valuemax', this.li.end);
+    this._syncAria(g);
+    g.addEventListener('keydown', e=>this._onKey(e, g));
+  },
+
+  _syncAria(g){
+    g.setAttribute('aria-valuenow', this.pos);
+    g.setAttribute('aria-valuetext', `${this.pos}, sur une droite de ${this.li.start} à ${this.li.end}`);
+  },
+
+  // Après « Valider », la réponse est figée (bouton « Suivant » visible)
+  _locked(){ return !$id('s1-next').classList.contains('hidden'); },
+
+  _setPos(v, g){
+    const li=this.li;
+    this.pos = round3(clamp(v, li.start, li.end));
+    this._movePieceX(g, NL.v2x(this.pos, li.start, li.end, li.ml, li.lw));
+    this._syncAria(g);
+  },
+
+  _onKey(e, g){
+    if(this._locked()) return;
+    const s=this.li.step; let v=this.pos;
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowUp':   v+=s; break;
+      case 'ArrowLeft':  case 'ArrowDown': v-=s; break;
+      case 'PageUp':   v+=10*s; break;
+      case 'PageDown': v-=10*s; break;
+      case 'Home': v=this.li.start; break;
+      case 'End':  v=this.li.end; break;
+      default: return;
+    }
+    e.preventDefault();
+    this._setPos(v, g);
+  },
+
+  // Placement par clic sur la droite (sans glisser : précision motrice réduite)
+  _bindClick(svg, li, g){
+    svg.onclick = (e)=>{
+      if(this._locked() || g.contains(e.target)) return;
+      const rect = svg.getBoundingClientRect();
+      const v = NL.x2v(e.clientX - rect.left, li.start, li.end, li.ml, li.lw, li.step);
+      this._setPos(v, g);
+      g.focus();
+    };
   },
 
   _bindDrag(g, svg, li){
@@ -769,6 +847,7 @@ const A1 = {
         this.pos = v;
         const nx = NL.v2x(v, li.start, li.end, li.ml, li.lw);
         this._movePieceX(g, nx);
+        this._syncAria(g);
       };
       const up = () => {
         g.style.cursor='grab';
@@ -809,7 +888,7 @@ const A1 = {
     const cx = NL.v2x(correct, li.start, li.end, li.ml, li.lw);
     const vl = svgEl('line',{x1:cx,y1:li.y-22,x2:cx,y2:li.y+22,stroke:'#e91e8c','stroke-width':'2','stroke-dasharray':'5,3',class:'correct-mark blink'});
     svg.appendChild(vl);
-    const lbl = svgEl('text',{x:cx,y:li.y+40,'text-anchor':'middle','font-size':'14','font-weight':'bold',fill:'#e91e8c',class:'correct-mark blink'});
+    const lbl = svgEl('text',{x:cx,y:li.y+50,'text-anchor':'middle','font-size':'18','font-weight':'bold',fill:'#c2185b',class:'correct-mark blink'});
     lbl.textContent = correct;
     svg.appendChild(lbl);
     const placed = this.pos;
@@ -896,7 +975,7 @@ const A2 = {
         const r=svgEl('rect',{x:x1, y:li.y-14, width:bw, height:28, rx:'3',
           fill:NAVY_FILL, stroke:NAVY, 'stroke-width':'2', class:'a2-placed'});
         const t=svgEl('text',{x:cx, y:li.y+5, 'text-anchor':'middle',
-          'font-size':'12','font-weight':'bold', fill:NAVY,
+          'font-size': bw>=24?'16':'12','font-weight':'bold', fill:NAVY,
           'font-family':'Segoe UI,Arial', class:'a2-placed'});
         t.textContent=this.cfg.unit;
         svg.appendChild(r); svg.appendChild(t);
@@ -921,14 +1000,24 @@ const A2 = {
       s.appendChild(svgEl('rect',{x:'2',y:'2',width:bw,height:bh,rx:'3',
         fill:NAVY_FILL, stroke:NAVY,'stroke-width':'2'}));
       const t=svgEl('text',{x:bw/2+2, y:bh/2+7,
-        'text-anchor':'middle','font-size': bw>30?'13':'10',
+        'text-anchor':'middle','font-size': bw>=24?'16':'12',
         'font-weight':'bold',fill:NAVY,'font-family':'Segoe UI,Arial'});
       t.textContent=this.cfg.unit;
       s.appendChild(t); wrap.appendChild(s);
       wrap.addEventListener('mousedown',e=>this._dragBlock(e,wrap));
       wrap.addEventListener('touchstart',e=>this._dragBlock(e,wrap),{passive:false});
+      wrap.addEventListener('click',()=>this._select(wrap));
       tray.appendChild(wrap);
     }
+    this.sel=null;
+    // Placement par clic : un bloc choisi, puis un clic sur une droite (sans glisser)
+    $id('s2-svg').onclick = (e)=>{ if(this.sel) this._drop(e.clientX, e.clientY); };
+  },
+
+  _select(wrap){
+    $id('s2-tray').querySelectorAll('.tray-sel').forEach(c=>c.classList.remove('tray-sel'));
+    this.sel = (this.sel===wrap) ? null : wrap;
+    if(this.sel) wrap.classList.add('tray-sel');
   },
 
   _dragBlock(e, blockEl){
@@ -999,6 +1088,7 @@ const A3 = {
     this.cfg=cfg; this.pieces=cfg.pieces.slice(); this.idx=0;
     this.placed=cfg.pieces.map(()=>cfg.lines.map(()=>null));
     this.doneLine=cfg.lines.map(()=>false);
+    this.sel=false;
     this._reset();
     this._renderLines();
     this._renderTray();
@@ -1090,8 +1180,44 @@ const A3 = {
       wrap.appendChild(s);
       wrap.addEventListener('mousedown', e=>this._dragPiece(e, val));
       wrap.addEventListener('touchstart', e=>this._dragPiece(e, val), {passive:false});
+      wrap.addEventListener('click', ()=>{ this.sel=!this.sel; this._styleTray(); });
+      if(this.sel) wrap.classList.add('tray-sel');
       tray.appendChild(wrap);
     }
+    // Placement par clic : une pièce choisie, puis un clic sur une droite (sans glisser)
+    $id('s3-svg').onclick = (e)=>{
+      if(!this.sel || this.idx>=this.pieces.length) return;
+      if(!$id('s3-next').classList.contains('hidden')) return; // réponse validée : figée
+      this._place(e.clientX, e.clientY, this.pieces[this.idx]);
+    };
+  },
+
+  _styleTray(){
+    $id('s3-tray').querySelectorAll('div').forEach(w=>w.classList.toggle('tray-sel', !!this.sel));
+  },
+
+  // Dépose la valeur sur la droite la plus proche du point (cx, cy) ; commun au glisser et au clic
+  _place(cx, cy, val){
+    const svg=$id('s3-svg');
+    const r=svg.getBoundingClientRect();
+    const sx=cx-r.left;
+    const sy=cy-r.top;
+    let best=-1, bestD=60;
+    this.linesInfo.forEach((li,i)=>{
+      if(i===0) return;
+      if(!li) return;
+      if(this.doneLine[i]) return;
+      const d=Math.abs(sy-li.y);
+      if(d<bestD){ bestD=d; best=i; }
+    });
+    if(best<0) return;
+    const li=this.linesInfo[best];
+    if(val>li.end) return;
+    const v=NL.x2v(sx, li.start, li.end, li.ml, li.lw, 1);
+    this.placed[this.idx][best]=v;
+    this.doneLine[best]=true;
+    this._renderAllPlaced(svg);
+    this._renderTray();
   },
 
   _dragPiece(e, val){
@@ -1120,26 +1246,7 @@ const A3 = {
       document.removeEventListener('touchend',up);
       floatDiv.remove();
       const[cx,cy]=getClientXY(ev);
-      const svg=$id('s3-svg');
-      const r=svg.getBoundingClientRect();
-      const sx=cx-r.left;
-      const sy=cy-r.top;
-      let best=-1, bestD=60;
-      this.linesInfo.forEach((li,i)=>{
-        if(i===0) return;
-        if(!li) return;
-        if(this.doneLine[i]) return;
-        const d=Math.abs(sy-li.y);
-        if(d<bestD){ bestD=d; best=i; }
-      });
-      if(best<0) return;
-      const li=this.linesInfo[best];
-      if(val>li.end) return;
-      const v=NL.x2v(sx, li.start, li.end, li.ml, li.lw, 1);
-      this.placed[this.idx][best]=v;
-      this.doneLine[best]=true;
-      this._renderAllPlaced($id('s3-svg'));
-      this._renderTray();
+      this._place(cx, cy, val);
     };
 
     document.addEventListener('mousemove',move,{passive:false});
@@ -1161,8 +1268,8 @@ const A3 = {
       const vl=svgEl('line',{x1:cx,y1:li.y-22,x2:cx,y2:li.y+22,stroke:'#e91e8c','stroke-width':'2',
         'stroke-dasharray':'5,3',class:'correct-mark3 blink'});
       svg.appendChild(vl);
-      const lbl=svgEl('text',{x:cx,y:li.y+38,'text-anchor':'middle','font-size':'13','font-weight':'bold',
-        fill:'#e91e8c',class:'correct-mark3 blink'});
+      const lbl=svgEl('text',{x:cx,y:li.y+50,'text-anchor':'middle','font-size':'18','font-weight':'bold',
+        fill:'#c2185b',class:'correct-mark3 blink'});
       lbl.textContent=val; svg.appendChild(lbl);
     });
     const fb=$id('s3-fb');
@@ -1175,6 +1282,7 @@ const A3 = {
 
   next(){
     this.idx++;
+    this.sel=false;
     this.doneLine=this.cfg.lines.map(()=>false);
     if(this.idx>=this.pieces.length){ $id('end-overlay').classList.remove('hidden'); return; }
     this._reset();
@@ -1196,6 +1304,7 @@ const A3 = {
 // ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
   App.init();
+  labelize();
   $id('l-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') App.login(); });
 });
 
