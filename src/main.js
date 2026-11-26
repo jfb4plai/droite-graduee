@@ -75,6 +75,8 @@ const App = {
     T.buildA2Lines();
     T.buildA3Lines();
     $id('a1-preset-help').textContent = A1_PRESET_HELP.custom;
+    try{ const d = localStorage.getItem('dg-display'); if(d==='tbi' || d==='device') $id('disp-mode').value = d; }catch(e){}
+    T.onDisp();
     T.preview();
     window.addEventListener('resize', ()=>{ if(this.mode==='teacher') T.preview(); });
   },
@@ -144,7 +146,8 @@ const App = {
       $id('btn-mode').textContent='Mode enseignant';
     } else {
       // Retour à l'écran enseignant : geste volontaire (confirmation), pour qu'un élève ne l'active pas sans le vouloir
-      if(!confirm("Revenir à l'écran enseignant ? Ce bouton est réservé à l'enseignant.")) return;
+      // (en projection TBI, c'est l'enseignant qui touche l'écran : pas de confirmation)
+      if(!this.tbi && !confirm("Revenir à l'écran enseignant ? Ce bouton est réservé à l'enseignant.")) return;
       this.mode='teacher';
       this._show('sc-teacher');
       $id('btn-mode').textContent='Mode élève';
@@ -223,6 +226,19 @@ const App = {
     $id(id).classList.add('active');
     // Mode élève : l'en-tête masque la déconnexion et le nom du compte
     document.body.classList.toggle('student-mode', id==='sc-student');
+    this._applyDisplay(id==='sc-student');
+  },
+
+  // Affichage de l'écran élève : en projection TBI, zoom ×1,6 ; sortie du plein écran en quittant l'écran élève
+  tbi: false,
+  _applyDisplay(student){
+    const tbi = student && this.tbi;
+    View.sc = tbi ? TBI_SCALE : 1;
+    document.body.classList.toggle('tbi-mode', tbi);
+    $id('sc-student').style.zoom = tbi ? String(TBI_SCALE) : '';
+    $id('s1-validate').textContent = tbi ? 'Montrer la bonne position' : '✓ Valider';
+    $id('s3-validate').textContent = tbi ? 'Montrer les bonnes positions' : '✓ Valider';
+    if(!student && document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
   },
 
   _err(msg){ $id('l-err').textContent=msg; $id('l-err').classList.remove('hidden'); },
@@ -257,6 +273,10 @@ const App = {
 };
 
 // Valeurs « rondes » pour espacer traits et numéros (1, 2, 5, 10, 20, 25, 50…)
+// Échelle de l'écran élève : 1 normalement, 1,6 en projection TBI (zoom CSS de #sc-student). Les coordonnées souris/doigt sont divisées par cette échelle.
+const View = { sc: 1 };
+const TBI_SCALE = 1.6;
+
 const NICE = [1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000,100000];
 function niceCeil(x, mult){ return NICE.find(n=>n>=x && n%mult===0) || NICE[NICE.length-1]; }
 
@@ -755,6 +775,17 @@ const T = {
     reader.readAsText(file);
   },
 
+  // Choix « un élève sur son appareil » / « projection TBI » : mémorisé sur cet appareil (localStorage), libellé du bouton Lancer adapté
+  onDisp(){
+    const v = $id('disp-mode').value;
+    try{ localStorage.setItem('dg-display', v); }catch(e){}
+    const tbi = (v==='tbi');
+    $id('btn-launch').textContent = tbi ? '▶ Lancer sur TBI' : "▶ Lancer pour l'élève";
+    $id('disp-help').textContent = tbi
+      ? "Plein écran, pièces et numéros agrandis (×1,6). « Valider » devient « Montrer la bonne position » ; le retour enseignant se fait sans confirmation. Rien n'est noté."
+      : "L'élève travaille seul sur son écran. Le retour enseignant demande une confirmation.";
+  },
+
   // Lit les cases brutes (une case vide ou illisible n'est pas remplacée par une valeur par défaut) et renvoie un message ou null
   _cfgError(act){
     const num = id => { const v = $id(id)?.value; return (v==null || v==='') ? NaN : parseFloat(v); };
@@ -797,6 +828,9 @@ const T = {
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     $id('sc-student').classList.add('active');
     document.body.classList.add('student-mode');
+    App.tbi = ($id('disp-mode').value === 'tbi');
+    App._applyDisplay(true);
+    if(App.tbi) document.documentElement.requestFullscreen?.().catch(()=>{}); // refusé = on reste en fenêtre
     $id('btn-mode').textContent='Mode enseignant';
     $id('s'+act).classList.remove('hidden');
     const cfg1=this.getA1(), p1=this.getPieces(1);
@@ -928,7 +962,7 @@ const A1 = {
     svg.onclick = (e)=>{
       if(this._locked() || g.contains(e.target)) return;
       const rect = svg.getBoundingClientRect();
-      const v = NL.x2v(e.clientX - rect.left, li.start, li.end, li.ml, li.lw, li.step);
+      const v = NL.x2v((e.clientX - rect.left) / View.sc, li.start, li.end, li.ml, li.lw, li.step);
       this._setPos(v, g);
       g.focus();
     };
@@ -942,7 +976,7 @@ const A1 = {
         ev.preventDefault();
         const [cx] = getClientXY(ev);
         const rect = svg.getBoundingClientRect();
-        const svgX = cx - rect.left;
+        const svgX = (cx - rect.left) / View.sc;
         const v = NL.x2v(svgX, li.start, li.end, li.ml, li.lw, li.step);
         this.pos = v;
         const nx = NL.v2x(v, li.start, li.end, li.ml, li.lw);
@@ -1033,6 +1067,10 @@ const A2 = {
     this.cfg=cfg;
     this.placements = cfg.lines.map(()=>[]);
     this.kb = {};
+    // Consigne affichée (aucune vérification automatique)
+    const consignes = { 'place-unit': `Placer 1 bloc unité (${cfg.unit}) par droite`, 'fill-steps': `Remplir les pas avec le bloc unité (${cfg.unit})` };
+    $id('s2-info').textContent = consignes[cfg.task] || '';
+    $id('s2-infobar').classList.toggle('hidden', !consignes[cfg.task]);
     this._render();
     this._buildTray();
   },
@@ -1198,13 +1236,14 @@ const A2 = {
     const bw=parseInt(blockEl.dataset.blocW)||50;
     const bh=parseInt(blockEl.dataset.blocH)||30;
     const clone=blockEl.cloneNode(true);
-    clone.style.cssText='position:fixed;pointer-events:none;z-index:100;opacity:.9;';
+    clone.style.cssText='position:fixed;pointer-events:none;z-index:100;opacity:.9;zoom:'+View.sc+';';
     document.body.appendChild(clone);
     const move=(ev)=>{
       ev.preventDefault();
       const[cx,cy]=getClientXY(ev);
-      clone.style.left=(cx - bw/2)+'px';
-      clone.style.top=(cy - bh/2)+'px';
+      // left/top d'un élément zoomé sont exprimés dans l'unité zoomée : on divise la position écran par le zoom
+      clone.style.left=(cx/View.sc - bw/2)+'px';
+      clone.style.top=(cy/View.sc - bh/2)+'px';
     };
     const up=(ev)=>{
       document.removeEventListener('mousemove',move);
@@ -1225,7 +1264,7 @@ const A2 = {
   _drop(cx,cy){
     const svg=$id('s2-svg');
     const r=svg.getBoundingClientRect();
-    const sx=cx-r.left, sy=cy-r.top;
+    const sx=(cx-r.left)/View.sc, sy=(cy-r.top)/View.sc;
     let best=-1, bestD=60;
     this.linesInfo.forEach((li,i)=>{
       if(i===0) return;
@@ -1438,8 +1477,8 @@ const A3 = {
   _place(cx, cy, val){
     const svg=$id('s3-svg');
     const r=svg.getBoundingClientRect();
-    const sx=cx-r.left;
-    const sy=cy-r.top;
+    const sx=(cx-r.left)/View.sc;
+    const sy=(cy-r.top)/View.sc;
     let best=-1, bestD=60;
     this.linesInfo.forEach((li,i)=>{
       if(i===0) return;
@@ -1463,7 +1502,7 @@ const A3 = {
     e.preventDefault();
     const PW=PR.W, PH=PR.HR+PR.HT;
     const floatDiv=document.createElement('div');
-    floatDiv.style.cssText='position:fixed;pointer-events:none;z-index:200;';
+    floatDiv.style.cssText='position:fixed;pointer-events:none;z-index:200;zoom:'+View.sc+';';
     const floatSvg=document.createElementNS(SVG,'svg');
     floatSvg.setAttribute('width', PW+4); floatSvg.setAttribute('height', PH+4);
     floatSvg.style.cssText='overflow:visible;display:block;';
@@ -1474,8 +1513,8 @@ const A3 = {
     const move=(ev)=>{
       ev.preventDefault();
       const[cx,cy]=getClientXY(ev);
-      floatDiv.style.left=(cx - (PW+4)/2)+'px';
-      floatDiv.style.top =(cy - PH - 2)+'px';
+      floatDiv.style.left=(cx/View.sc - (PW+4)/2)+'px';
+      floatDiv.style.top =(cy/View.sc - PH - 2)+'px';
     };
 
     const up=(ev)=>{
