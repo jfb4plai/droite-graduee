@@ -127,6 +127,9 @@ const App = {
 
   toggleMode(){
     if(this.mode==='teacher'){
+      // Aucune activité en cours : lancer l'activité sélectionnée (sinon l'écran élève resterait vide)
+      const enCours = ['s1','s2','s3'].some(id=>!$id(id).classList.contains('hidden'));
+      if(!enCours){ T.launch(); return; }
       this.mode='student';
       this._show('sc-student');
       $id('btn-mode').textContent='Mode enseignant';
