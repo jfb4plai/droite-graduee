@@ -6,11 +6,12 @@
 <title>PLAI – Droite Graduée Interactive</title>
 <style>
 :root {
-  --pink: #e91e8c;
+  --pink: #e91e8c;       /* décoratif : bordures, tracés */
+  --pink-dark: #c2185b;  /* texte et fonds de boutons : contraste ≥ 4,5:1 avec le blanc */
   --dark: #1a1a1a;
   --light: #f8f8f8;
   --border: #ddd;
-  --green: #4caf50;
+  --green: #2e7d32;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
@@ -31,6 +32,10 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 .piece-draggable:focus-visible { outline: 3px solid #0f6e56; outline-offset: 4px; }
 .tray-sel { outline: 3px solid var(--pink); outline-offset: 3px; border-radius: 6px; }
 
+/* Mode élève : l'élève ne voit ni la déconnexion ni le nom du compte ; le retour enseignant demande une confirmation */
+.student-mode #btn-logout, .student-mode #hdr-user { display: none; }
+.student-mode #btn-mode { background: #eee; color: #444; }
+
 /* ── SCREENS ── */
 .screen { display: none; }
 .screen.active { display: block; }
@@ -38,7 +43,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 /* ── BUTTONS ── */
 .btn { padding: 9px 18px; min-height: 44px; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s; }
 .btn:hover { opacity: .82; }
-.btn-pink  { background: var(--pink); color: #fff; }
+.btn-pink  { background: var(--pink-dark); color: #fff; }
 .btn-grey  { background: #eee; color: var(--dark); }
 .btn-green { background: var(--green); color: #fff; }
 .btn-sm    { padding: 8px 14px; min-height: 44px; min-width: 44px; font-size: 1rem; }
@@ -62,7 +67,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 .side-section { background: #f9f9f9; border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 14px; }
 .side-section h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .5px; color: #595959; margin-bottom: 10px; }
 .act-btn { display: block; width: 100%; text-align: left; padding: 9px 12px; min-height: 44px; margin-bottom: 5px; border: 2px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-weight: 600; font-size: 1rem; }
-.act-btn.active { border-color: var(--pink); background: var(--pink); color: white; }
+.act-btn.active { border-color: var(--pink-dark); background: var(--pink-dark); color: white; }
 .section-title { font-size: 1rem; font-weight: 700; padding-bottom: 8px; border-bottom: 2px solid var(--pink); margin-bottom: 16px; }
 .cfg-panel { display: none; }
 .cfg-panel.active { display: block; }
@@ -101,7 +106,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 /* ── END OVERLAY ── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
 .dialog { background: white; padding: 36px; border-radius: 12px; text-align: center; max-width: 360px; }
-.dialog h2 { color: var(--pink); font-size: 1.6rem; margin-bottom: 10px; }
+.dialog h2 { color: var(--pink-dark); font-size: 1.6rem; margin-bottom: 10px; }
 .dialog p { color: #666; margin-bottom: 20px; }
 
 .hidden { display: none !important; }
@@ -115,7 +120,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
   <img src="/logo-plai.jpg" alt="PLAI – Pôle Liégeois d'Accompagnement vers une École Inclusive" class="logo-img">
   <div class="header-right hidden" id="hdr-ctrl">
     <span id="hdr-user"></span>
-    <button class="btn btn-grey btn-sm" onclick="App.logout()">Déconnexion</button>
+    <button class="btn btn-grey btn-sm" id="btn-logout" onclick="App.logout()">Déconnexion</button>
     <button class="btn btn-pink btn-sm" id="btn-mode" onclick="App.toggleMode()">Mode élève</button>
   </div>
 </header>
@@ -130,10 +135,10 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
     <button class="btn btn-pink btn-full" id="l-login-btn" onclick="App.login()">Se connecter</button>
     <button class="btn btn-pink btn-full hidden" id="l-signup-btn" onclick="App.signup()">Créer mon compte</button>
     <button class="btn btn-pink btn-full hidden" id="l-reset-btn" onclick="App.sendReset()">Envoyer le lien</button>
-    <p class="login-hint" id="l-toggle-hint">Pas encore de compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Créer un compte</a></p>
-    <p class="login-hint hidden" id="l-signin-hint">Déjà un compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink);">Se connecter</a></p>
-    <p class="login-hint" id="l-forgot-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink);">Mot de passe oublié ?</a></p>
-    <p class="login-hint hidden" id="l-reset-cancel-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink);">← Retour à la connexion</a></p>
+    <p class="login-hint" id="l-toggle-hint">Pas encore de compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink-dark);">Créer un compte</a></p>
+    <p class="login-hint hidden" id="l-signin-hint">Déjà un compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink-dark);">Se connecter</a></p>
+    <p class="login-hint" id="l-forgot-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink-dark);">Mot de passe oublié ?</a></p>
+    <p class="login-hint hidden" id="l-reset-cancel-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink-dark);">← Retour à la connexion</a></p>
   </div>
 </div>
 
@@ -185,22 +190,31 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
         <div class="cfg-grid">
           <div class="cfg-box">
             <h3>Droite graduée</h3>
-            <div class="cfg-row"><label>Début</label><input type="number" id="a1-start" value="0" min="0" oninput="T.preview()"></div>
-            <div class="cfg-row"><label>Fin</label><input type="number" id="a1-end" value="10" min="1" oninput="T.preview()"></div>
-            <div class="cfg-row"><label>Pas (intervalle)</label><input type="number" id="a1-step" value="1" min="1" oninput="T.preview()"></div>
-            <div class="cfg-row"><label>Toutes les graduations</label><input type="checkbox" id="a1-allticks" checked onchange="T.toggleTicks(1);T.preview()"></div>
+            <div class="cfg-row"><label>Début</label><input type="number" id="a1-start" value="0" min="0" oninput="T.a1Preset();T.preview()"></div>
+            <div class="cfg-row"><label>Fin</label><input type="number" id="a1-end" value="10" min="1" oninput="T.a1Preset();T.preview()"></div>
+            <div class="cfg-row"><label>Pas (intervalle)</label><input type="number" id="a1-step" value="1" min="1" oninput="T.a1Preset();T.preview()"></div>
+            <div class="cfg-row"><label for="a1-preset">Mode de la droite</label>
+              <select id="a1-preset" onchange="T.a1Preset();T.preview()">
+                <option value="custom">Personnalisé (réglages ci-dessous)</option>
+                <option value="count">Compter : toutes les graduations numérotées</option>
+                <option value="est2">Estimer : seulement le début et la fin</option>
+                <option value="est3">Estimer : début, milieu et fin</option>
+              </select>
+            </div>
+            <div class="t-hint" id="a1-preset-help" aria-live="polite"></div>
+            <div class="cfg-row"><label>Toutes les graduations</label><input type="checkbox" id="a1-allticks" checked onchange="T.a1Custom();T.toggleTicks(1);T.preview()"></div>
             <div id="a1-cticks" class="hidden" style="margin-top:4px;">
               <label for="a1-ticklist" class="t-hint" style="display:block;">Graduations (virgule, max 10)</label>
-              <input type="text" id="a1-ticklist" placeholder="Ex: 0,2,5,10" style="width:100%;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" oninput="T.preview()">
+              <input type="text" id="a1-ticklist" placeholder="Ex: 0,2,5,10" style="width:100%;padding:6px 8px;min-height:44px;border:1px solid #767676;border-radius:4px;font-size:1rem;" oninput="T.a1Custom();T.preview()">
             </div>
             <div class="cfg-row" style="margin-top:8px;"><label>Afficher les nombres</label>
-              <select id="a1-shownums" onchange="T.onShowNumsChange(1);T.preview()">
+              <select id="a1-shownums" onchange="T.a1Custom();T.onShowNumsChange(1);T.preview()">
                 <option value="all">Toutes les graduations</option>
                 <option value="every">Tous les X pas</option>
                 <option value="none">Aucun</option>
               </select>
             </div>
-            <div class="cfg-row hidden" id="a1-everyrow"><label>Afficher tous les X pas</label><input type="number" id="a1-everyn" value="2" min="1" oninput="T.preview()"></div>
+            <div class="cfg-row hidden" id="a1-everyrow"><label>Afficher tous les X pas</label><input type="number" id="a1-everyn" value="2" min="1" oninput="T.a1Custom();T.preview()"></div>
           </div>
           <div class="cfg-box">
             <h3>Pièces-nombres (max 20)</h3>

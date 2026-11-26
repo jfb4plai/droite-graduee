@@ -14,6 +14,14 @@ function svgEl(tag, attrs){
 function snap(val, step){ return Math.round(val / step) * step; }
 function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 function round3(v){ return Math.round(v * 1000) / 1000; }
+// Aide affichée sous le choix « Mode de la droite » (activité 1)
+const A1_PRESET_HELP = {
+  custom: "Régler librement les graduations ci-dessous. Si toutes les graduations sont numérotées, l'élève peut placer la pièce en comptant les traits plutôt qu'en estimant.",
+  count:  "Toutes les graduations sont numérotées : l'élève peut placer la pièce en comptant les traits.",
+  est2:   "Seuls le début et la fin sont visibles : l'élève doit estimer la position, sans compter de traits.",
+  est3:   "Le début, le milieu et la fin sont visibles : l'élève estime la position à partir d'un repère."
+};
+
 // Associe chaque <label> d'une ligne de configuration à son champ (lecteur d'écran + zone de clic élargie)
 function labelize(){
   document.querySelectorAll('.cfg-row').forEach(row=>{
@@ -66,6 +74,7 @@ const App = {
     T.initGrids();
     T.buildA2Lines();
     T.buildA3Lines();
+    $id('a1-preset-help').textContent = A1_PRESET_HELP.custom;
     T.preview();
     window.addEventListener('resize', ()=>{ if(this.mode==='teacher') T.preview(); });
   },
@@ -88,7 +97,7 @@ const App = {
     const { error } = await supabase.auth.signUp({ email, password: p });
     if(error){ this._err(error.message); return; }
     const errEl = $id('l-err');
-    errEl.style.color = '#4caf50';
+    errEl.style.color = '#2e7d32';
     errEl.textContent = 'Compte créé ! Vérifiez votre email puis connectez-vous.';
     errEl.classList.remove('hidden');
   },
@@ -101,7 +110,7 @@ const App = {
     });
     const errEl = $id('l-err');
     if(error){ this._err(error.message); return; }
-    errEl.style.color = '#4caf50';
+    errEl.style.color = '#2e7d32';
     errEl.textContent = 'Email envoyé ! Vérifiez votre boîte mail pour créer un nouveau mot de passe.';
     errEl.classList.remove('hidden');
   },
@@ -109,9 +118,9 @@ const App = {
   async updatePassword(){
     const p = $id('r-pass').value.trim();
     const errEl = $id('r-err');
-    if(p.length < 6){ errEl.textContent='6 caractères minimum.'; errEl.style.color='red'; errEl.classList.remove('hidden'); return; }
+    if(p.length < 6){ errEl.textContent='6 caractères minimum.'; errEl.style.color='#b00020'; errEl.classList.remove('hidden'); return; }
     const { error } = await supabase.auth.updateUser({ password: p });
-    if(error){ errEl.textContent=error.message; errEl.style.color='red'; errEl.classList.remove('hidden'); return; }
+    if(error){ errEl.textContent=error.message; errEl.style.color='#b00020'; errEl.classList.remove('hidden'); return; }
     this.passwordRecovery = false;
     const { data: { session } } = await supabase.auth.getSession();
     if(session?.user){
@@ -134,6 +143,8 @@ const App = {
       this._show('sc-student');
       $id('btn-mode').textContent='Mode enseignant';
     } else {
+      // Retour à l'écran enseignant : geste volontaire (confirmation), pour qu'un élève ne l'active pas sans le vouloir
+      if(!confirm("Revenir à l'écran enseignant ? Ce bouton est réservé à l'enseignant.")) return;
       this.mode='teacher';
       this._show('sc-teacher');
       $id('btn-mode').textContent='Mode élève';
@@ -146,7 +157,7 @@ const App = {
     this._resetMode = false;
     const errEl = $id('l-err');
     errEl.classList.add('hidden');
-    errEl.style.color = 'red';
+    errEl.style.color = '#b00020';
     $id('l-pwd-group').classList.remove('hidden');
     $id('l-reset-btn').classList.add('hidden');
     $id('l-forgot-hint').classList.remove('hidden');
@@ -172,7 +183,7 @@ const App = {
     this._signupMode = false;
     const errEl = $id('l-err');
     errEl.classList.add('hidden');
-    errEl.style.color = 'red';
+    errEl.style.color = '#b00020';
     $id('l-toggle-hint').classList.add('hidden');
     $id('l-signin-hint').classList.add('hidden');
     if(this._resetMode){
@@ -210,6 +221,8 @@ const App = {
   _show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     $id(id).classList.add('active');
+    // Mode élève : l'en-tête masque la déconnexion et le nom du compte
+    document.body.classList.toggle('student-mode', id==='sc-student');
   },
 
   _err(msg){ $id('l-err').textContent=msg; $id('l-err').classList.remove('hidden'); },
@@ -315,6 +328,9 @@ const NL = {
 // ─────────────────────────────────────────────────
 // PIECE RENDERER
 // ─────────────────────────────────────────────────
+// Couleur du nombre sur une pièce : le contour peut être trop clair pour le texte (contraste < 4,5:1)
+const TEXT_ON_PIECE = { '#e91e8c':'#c2185b', '#999':'#595959', '#bbb':'#595959' };
+
 const PR = {
   W: 46, HR: 32, HT: 18,
 
@@ -329,7 +345,7 @@ const PR = {
     }));
     const len = String(value).length;
     const fs = len <= 2 ? '18' : len === 3 ? '16' : '14';
-    const t = svgEl('text',{x:cx,y:cy+hr/2+5.5,'text-anchor':'middle','font-size':fs,'font-weight':'bold',fill:stroke,'font-family':'Segoe UI,Arial','pointer-events':'none'});
+    const t = svgEl('text',{x:cx,y:cy+hr/2+5.5,'text-anchor':'middle','font-size':fs,'font-weight':'bold',fill:TEXT_ON_PIECE[stroke]||stroke,'font-family':'Segoe UI,Arial','pointer-events':'none'});
     t.textContent = value;
     g.appendChild(t);
     g._tipY = cy + hr + ht;
@@ -409,6 +425,30 @@ const T = {
   onShowNumsChange(a){
     const v = $id('a'+a+'-shownums')?.value;
     $id('a'+a+'-everyrow')?.classList.toggle('hidden', v!=='every');
+  },
+
+  // Modes de la droite (activité 1) : choisir « compter » ou « estimer » sans régler chaque case
+  a1Preset(){
+    const p = $id('a1-preset').value;
+    $id('a1-preset-help').textContent = A1_PRESET_HELP[p];
+    if(p==='custom') return;
+    const start = parseFloat($id('a1-start').value)||0;
+    const end   = parseFloat($id('a1-end').value)||10;
+    const step  = parseFloat($id('a1-step').value)||1;
+    const all = (p==='count');
+    $id('a1-allticks').checked = all;
+    $id('a1-shownums').value = 'all';
+    if(!all){
+      const mid = clamp(round3(Math.round(((start+end)/2)/step)*step), start, end);
+      $id('a1-ticklist').value = (p==='est2') ? '' : String(mid);
+    }
+    this.toggleTicks(1); this.onShowNumsChange(1);
+  },
+
+  // Un réglage manuel des graduations repasse le mode sur « Personnalisé »
+  a1Custom(){
+    const sel = $id('a1-preset');
+    if(sel.value!=='custom'){ sel.value='custom'; $id('a1-preset-help').textContent = A1_PRESET_HELP.custom; }
   },
 
   getA1(){
@@ -606,7 +646,7 @@ const T = {
           <span class="sname" title="${name}">${name}</span>
           <div style="display:flex;gap:4px;">
             <button class="btn btn-grey btn-sm" onclick="T.load('${name}')">↓</button>
-            <button class="btn btn-sm" style="background:#fdd;color:red;" onclick="T.del('${name}')">✕</button>
+            <button class="btn btn-sm" style="background:#fdd;color:#b00020;" onclick="T.del('${name}')">✕</button>
           </div>
         </div>
       `);
@@ -626,6 +666,7 @@ const T = {
       $id('a1-everyn').value=c.everyN||2;
       if(c.showTicks!=='all') $id('a1-ticklist').value=(c.customTicks||[]).join(',');
       this.toggleTicks(1); this.onShowNumsChange(1);
+      this.a1Custom();
       $id('a1-keephistory').checked = c.keepHistory ?? false;
     }
     if(cfg.a1p){
@@ -703,6 +744,7 @@ const T = {
     App.mode='student';
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     $id('sc-student').classList.add('active');
+    document.body.classList.add('student-mode');
     $id('btn-mode').textContent='Mode enseignant';
     $id('s'+act).classList.remove('hidden');
     const cfg1=this.getA1(), p1=this.getPieces(1);
@@ -901,9 +943,9 @@ const A1 = {
     const fb = $id('s1-fb');
     fb.classList.remove('hidden');
     if(placed === correct){
-      fb.textContent='✓ Parfait !'; fb.style.color='#4caf50';
+      fb.textContent='✓ Parfait !'; fb.style.color='#2e7d32';
     } else {
-      fb.textContent=`Ta réponse : ${placed}  |  Bonne position : ${correct}`; fb.style.color='#e91e8c';
+      fb.textContent=`Ta réponse : ${placed}  |  Bonne position : ${correct}`; fb.style.color='#c2185b';
     }
     $id('s1-validate').classList.add('hidden');
     $id('s1-next').classList.remove('hidden');
@@ -1420,7 +1462,7 @@ const A3 = {
     const fb=$id('s3-fb');
     fb.classList.remove('hidden');
     fb.textContent='Bonne(s) position(s) indiquée(s) en rose ↑';
-    fb.style.color='#e91e8c';
+    fb.style.color='#c2185b';
     $id('s3-validate').classList.add('hidden');
     $id('s3-next').classList.remove('hidden');
   },
