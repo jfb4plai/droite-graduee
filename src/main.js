@@ -256,6 +256,10 @@ const App = {
   }
 };
 
+// Valeurs « rondes » pour espacer traits et numéros (1, 2, 5, 10, 20, 25, 50…)
+const NICE = [1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000,100000];
+function niceCeil(x, mult){ return NICE.find(n=>n>=x && n%mult===0) || NICE[NICE.length-1]; }
+
 // ─────────────────────────────────────────────────
 // NUMBER LINE RENDERER
 // ─────────────────────────────────────────────────
@@ -268,17 +272,6 @@ const NL = {
     const ml = this.ML, mr = this.MR;
     const lw = svgW - ml - mr;
 
-    if(label){
-      const t = svgEl('text',{x:ml, y:y-18, 'font-size':'16','font-family':'Segoe UI,Arial',fill:'#595959'});
-      t.textContent = label;
-      svg.appendChild(t);
-    }
-
-    svg.appendChild(svgEl('line',{x1:ml,y1:y,x2:ml+lw,y2:y,stroke:'#333','stroke-width':'2'}));
-    svg.appendChild(svgEl('polygon',{
-      points:`${ml+lw},${y-5} ${ml+lw+12},${y} ${ml+lw},${y+5}`,fill:'#333'
-    }));
-
     let ticks = [];
     if(showTicks === 'all'){
       for(let v=start; v<=end+1e-9; v+=step) ticks.push(round3(v));
@@ -288,31 +281,55 @@ const NL = {
       if(!ticks.includes(end))   ticks.push(end);
     }
 
-    // « Toutes les graduations » : si les nombres se chevauchent, n'en afficher qu'un sur k (k calculé sur la largeur réelle)
-    let skipK = 1;
-    if(showNums === 'all' && showTicks === 'all' && ticks.length > 1){
-      const maxLen = Math.max(...ticks.map(t=>String(t).length));
+    // Lisibilité : si les traits ou les numéros seraient trop serrés (pas imposé, ex. pas 1 sur 0→1000), n'en garder qu'un sur t (traits) et un sur k (numéros),
+    // avec des valeurs « rondes » (1, 2, 5, 10, 20, 25, 50…) ; la droite l'indique en toutes lettres.
+    let tickSkip = 1, numSkip = 1, labelNeed = 1;
+    const N = ticks.length - 1;
+    if(showTicks === 'all' && N > 0){
       const spacing = lw * step / (end - start);
-      skipK = Math.max(1, Math.ceil((maxLen * 10 + 8) / spacing));
+      const maxLen = Math.max(...ticks.map(t=>String(t).length));
+      labelNeed = (maxLen * 10 + 8) / spacing;
+      tickSkip = spacing >= 6 ? 1 : niceCeil(6 / spacing, 1);
+      if(showNums === 'all') numSkip = niceCeil(Math.max(labelNeed, tickSkip), tickSkip);
     }
+    const notes = [];
+    if(tickSkip > 1) notes.push(`1 trait sur ${tickSkip}`);
+    if(numSkip > 1) notes.push(`1 numéro sur ${numSkip}`);
 
+    const txt = (x, yy, content, fill, anchor) => {
+      const t = svgEl('text',{x, y:yy, 'font-size':'16','font-family':'Segoe UI,Arial',fill});
+      if(anchor) t.setAttribute('text-anchor', anchor);
+      t.textContent = content;
+      svg.appendChild(t);
+    };
+    if(label) txt(ml, y-18, label + (notes.length ? ' · ' + notes.join(', ') : ''), '#595959');
+    else if(notes.length) txt(ml, y+70, 'Pour rester lisible : ' + notes.join(', '), '#595959'); // sous la droite : au-dessus, la pièce la cacherait
+
+    svg.appendChild(svgEl('line',{x1:ml,y1:y,x2:ml+lw,y2:y,stroke:'#333','stroke-width':'2'}));
+    svg.appendChild(svgEl('polygon',{
+      points:`${ml+lw},${y-5} ${ml+lw+12},${y} ${ml+lw},${y+5}`,fill:'#333'
+    }));
+
+    const lastNumIdx = Math.floor(N / numSkip) * numSkip;
     ticks.forEach((v, ti)=>{
-      const x = this.v2x(v, start, end, ml, lw);
       const isEnd = (v===start||v===end);
+      const drawn = (ti % tickSkip === 0) || ti === N;
+      if(!drawn) return;
+      const x = this.v2x(v, start, end, ml, lw);
       const th = isEnd ? 14 : 8;
       svg.appendChild(svgEl('line',{x1:x,y1:y-th,x2:x,y2:y+th,stroke:'#333','stroke-width': isEnd?'2':'1.5'}));
 
       let show = false;
-      if(showNums === 'all') show = (ti % skipK === 0);
+      if(showNums === 'all'){
+        show = (ti % numSkip === 0);
+        // dernier numéro (fin de droite) : affiché seulement s'il ne touche pas le précédent
+        if(ti === N && ti % numSkip !== 0) show = (N - lastNumIdx) >= labelNeed;
+      }
       else if(showNums === 'every'){
         const idx = Math.round((v-start)/step);
         show = (idx % (everyN||1) === 0);
       }
-      if(show){
-        const t = svgEl('text',{x,y:y+28,'text-anchor':'middle','font-size':'16','font-family':'Segoe UI,Arial',fill:'#333'});
-        t.textContent = v;
-        svg.appendChild(t);
-      }
+      if(show) txt(x, y+28, v, '#333', 'middle');
     });
 
     return { ml, lw, y, start, end, step };
@@ -604,7 +621,7 @@ const T = {
     svg.setAttribute('width', w);
     svg.setAttribute('height', h);
     cfg.lines.forEach((l,i)=>{
-      NL.draw(svg,{start:0,end:100,step:l.step,showTicks:'all',showNums:l.showNums,everyN:1},w,40+i*70,`Droite ${i+1}  (0→100, pas=${l.step})`);
+      NL.draw(svg,{start:l.start,end:l.end,step:l.step,showTicks:'all',showNums:l.showNums,everyN:1},w,40+i*70,`Droite ${i+1}  (${l.start}→${l.end}, pas=${l.step})`);
     });
   },
 
