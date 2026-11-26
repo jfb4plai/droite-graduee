@@ -932,6 +932,7 @@ const A2 = {
   init(cfg){
     this.cfg=cfg;
     this.placements = cfg.lines.map(()=>[]);
+    this.kb = {};
     this._render();
     this._buildTray();
   },
@@ -981,7 +982,79 @@ const A2 = {
         svg.appendChild(r); svg.appendChild(t);
       });
     });
+    this._syncSliders();
   },
+
+  // ── Clavier : une « zone curseur » par droite 2..n ; flèches = déplacer, Entrée = poser, Retour arrière = retirer le dernier ──
+  _maxV(li){ return Math.max(li.start, li.end - this.cfg.unit); },
+
+  _syncSliders(){
+    const svg=$id('s2-svg');
+    svg.querySelectorAll('.a2-slider,.a2-ghost').forEach(e=>e.remove());
+    this.kb = this.kb || {};
+    this.linesInfo.forEach((li,i)=>{
+      if(i===0) return;
+      if(!Number.isFinite(this.kb[i]) || this.kb[i]<li.start || this.kb[i]>this._maxV(li)) this.kb[i]=li.start;
+      const g=svgEl('g',{class:'a2-slider','data-line':i,tabindex:'0',role:'slider','aria-orientation':'horizontal',
+        'aria-label':`Droite ${i+1} : placer un bloc de ${this.cfg.unit}. Flèches pour déplacer, Entrée pour poser, Retour arrière pour retirer le dernier bloc.`,
+        'aria-valuemin':li.start,'aria-valuemax':li.end});
+      g.appendChild(svgEl('rect',{x:li.ml-6,y:li.y-30,width:li.lw+12,height:60,fill:'transparent','pointer-events':'none'}));
+      g.addEventListener('keydown',e=>this._onKey(e,i));
+      g.addEventListener('focus',()=>this._ghost(i));
+      g.addEventListener('blur',()=>svg.querySelectorAll('.a2-ghost').forEach(x=>x.remove()));
+      svg.appendChild(g);
+      this._aria(g,i);
+    });
+  },
+
+  _aria(g,i){
+    g.setAttribute('aria-valuenow', this.kb[i]);
+    g.setAttribute('aria-valuetext', `${this.kb[i]}, ${this.placements[i].length} bloc(s) posé(s)`);
+  },
+
+  _ghost(i){
+    const svg=$id('s2-svg');
+    svg.querySelectorAll('.a2-ghost').forEach(e=>e.remove());
+    const li=this.linesInfo[i];
+    const range=((li.end ?? 100)-(li.start ?? 0)) || 100;
+    const bw=this.cfg.unit*(li.lw/range);
+    const x1=NL.v2x(this.kb[i], li.start, li.end, li.ml, li.lw);
+    svg.appendChild(svgEl('rect',{x:x1,y:li.y-14,width:bw,height:28,rx:'3',fill:'rgba(15,110,86,.18)',
+      stroke:'#0f6e56','stroke-width':'2','stroke-dasharray':'4,3',class:'a2-ghost','pointer-events':'none'}));
+  },
+
+  _onKey(e,i){
+    const li=this.linesInfo[i], u=this.cfg.unit, max=this._maxV(li);
+    let v=this.kb[i];
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowUp':   v+=u; break;
+      case 'ArrowLeft':  case 'ArrowDown': v-=u; break;
+      case 'PageUp':   v+=10*u; break;
+      case 'PageDown': v-=10*u; break;
+      case 'Home': v=li.start; break;
+      case 'End':  v=max; break;
+      case 'Enter': case ' ':
+        e.preventDefault();
+        if(this.kb[i]>=100) return;
+        this.placements[i].push(this.kb[i]);
+        this.kb[i]=Math.min(this.kb[i]+u, max);
+        this._renderPlaced($id('s2-svg'));
+        this._focusLine(i);
+        return;
+      case 'Backspace': case 'Delete':
+        e.preventDefault();
+        this.placements[i].pop();
+        this._renderPlaced($id('s2-svg'));
+        this._focusLine(i);
+        return;
+      default: return;
+    }
+    e.preventDefault();
+    this.kb[i]=round3(clamp(v, li.start, max));
+    this._ghost(i); this._aria(e.currentTarget,i);
+  },
+
+  _focusLine(i){ $id('s2-svg').querySelector(`.a2-slider[data-line="${i}"]`)?.focus(); },
 
   _buildTray(){
     const tray=$id('s2-tray');
@@ -1088,7 +1161,7 @@ const A3 = {
     this.cfg=cfg; this.pieces=cfg.pieces.slice(); this.idx=0;
     this.placed=cfg.pieces.map(()=>cfg.lines.map(()=>null));
     this.doneLine=cfg.lines.map(()=>false);
-    this.sel=false;
+    this.sel=false; this.kb={};
     this._reset();
     this._renderLines();
     this._renderTray();
@@ -1126,6 +1199,71 @@ const A3 = {
       this.linesInfo.push(li||{ml:NL.ML,lw:this.svgW-NL.ML-NL.MR,y,...l});
     });
     this._renderAllPlaced(svg);
+    this._syncSliders();
+  },
+
+  // ── Clavier : une « zone curseur » par droite non remplie ; flèches = déplacer, Entrée = poser ──
+  _syncSliders(){
+    const svg=$id('s3-svg');
+    svg.querySelectorAll('.a3-slider,.a3-ghost').forEach(e=>e.remove());
+    if(this.idx>=this.pieces.length) return;
+    const val=this.pieces[this.idx];
+    this.kb = this.kb || {};
+    this.linesInfo.forEach((li,i)=>{
+      if(i===0 || !li || this.doneLine[i] || val>li.end) return;
+      if(!Number.isFinite(this.kb[i]) || this.kb[i]<li.start || this.kb[i]>li.end) this.kb[i]=li.start;
+      const g=svgEl('g',{class:'a3-slider','data-line':i,tabindex:'0',role:'slider','aria-orientation':'horizontal',
+        'aria-label':`Droite ${i+1} : placer le nombre ${val}. Flèches pour déplacer, Entrée pour poser.`,
+        'aria-valuemin':li.start,'aria-valuemax':li.end});
+      g.appendChild(svgEl('rect',{x:li.ml-6,y:li.y-34,width:li.lw+12,height:68,fill:'transparent','pointer-events':'none'}));
+      g.addEventListener('keydown',e=>this._onKey(e,i));
+      g.addEventListener('focus',()=>this._ghost(i));
+      g.addEventListener('blur',()=>svg.querySelectorAll('.a3-ghost').forEach(x=>x.remove()));
+      svg.appendChild(g);
+      this._aria(g,i);
+    });
+  },
+
+  _aria(g,i){
+    g.setAttribute('aria-valuenow', this.kb[i]);
+    g.setAttribute('aria-valuetext', `${this.kb[i]}, sur la droite ${i+1} de ${this.linesInfo[i].start} à ${this.linesInfo[i].end}`);
+  },
+
+  _ghost(i){
+    const svg=$id('s3-svg');
+    svg.querySelectorAll('.a3-ghost').forEach(e=>e.remove());
+    const li=this.linesInfo[i];
+    const x=NL.v2x(this.kb[i], li.start, li.end, li.ml, li.lw);
+    const g=PR.make(this.pieces[this.idx], x, li.y-PR.totalH(), '#0f6e56', '#e6f2ee');
+    g.classList.add('a3-ghost'); g.style.pointerEvents='none'; g.style.opacity='.8';
+    svg.appendChild(g);
+  },
+
+  _onKey(e,i){
+    if(!$id('s3-next').classList.contains('hidden')) return; // réponse validée : figée
+    const li=this.linesInfo[i], s=li.step||1;
+    let v=this.kb[i];
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowUp':   v+=s; break;
+      case 'ArrowLeft':  case 'ArrowDown': v-=s; break;
+      case 'PageUp':   v+=10*s; break;
+      case 'PageDown': v-=10*s; break;
+      case 'Home': v=li.start; break;
+      case 'End':  v=li.end; break;
+      case 'Enter': case ' ':
+        e.preventDefault();
+        this.placed[this.idx][i]=this.kb[i];
+        this.doneLine[i]=true;
+        this._renderAllPlaced($id('s3-svg'));
+        this._renderTray();
+        this._syncSliders();
+        ($id('s3-svg').querySelector('.a3-slider') || $id('s3-validate')).focus();
+        return;
+      default: return;
+    }
+    e.preventDefault();
+    this.kb[i]=round3(clamp(v, li.start, li.end));
+    this._ghost(i); this._aria(e.currentTarget,i);
   },
 
   _renderAllPlaced(svg){
@@ -1218,6 +1356,7 @@ const A3 = {
     this.doneLine[best]=true;
     this._renderAllPlaced(svg);
     this._renderTray();
+    this._syncSliders();
   },
 
   _dragPiece(e, val){
@@ -1282,7 +1421,7 @@ const A3 = {
 
   next(){
     this.idx++;
-    this.sel=false;
+    this.sel=false; this.kb={};
     this.doneLine=this.cfg.lines.map(()=>false);
     if(this.idx>=this.pieces.length){ $id('end-overlay').classList.remove('hidden'); return; }
     this._reset();
