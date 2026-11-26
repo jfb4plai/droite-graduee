@@ -154,6 +154,15 @@ const App = {
     await supabase.auth.signOut();
   },
 
+  // Page de présentation consultable une fois connecté ; retour à la configuration
+  goHome(){ this._show('sc-home'); },
+  backFromHome(){
+    this.mode = 'teacher';
+    this._show('sc-teacher');
+    $id('btn-mode').textContent = 'Mode élève';
+    T.preview();
+  },
+
   toggleMode(){
     if(this.mode==='teacher'){
       // Aucune activité en cours : lancer l'activité sélectionnée (sinon l'écran élève resterait vide)

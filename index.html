@@ -33,7 +33,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 .tray-sel { outline: 3px solid var(--pink); outline-offset: 3px; border-radius: 6px; }
 
 /* Mode élève : l'élève ne voit ni la déconnexion ni le nom du compte ; le retour enseignant demande une confirmation */
-.student-mode #btn-logout, .student-mode #hdr-user { display: none; }
+.student-mode #btn-logout, .student-mode #hdr-user, .student-mode #btn-home { display: none; }
 .student-mode #btn-mode { background: #eee; color: #444; }
 
 /* ── SCREENS ── */
@@ -145,6 +145,7 @@ body.ease .btn, body.ease input, body.ease select, body.ease .act-btn { font-fam
 <header class="header">
   <img src="/logo-plai.jpg" alt="PLAI – Pôle Liégeois d'Accompagnement vers une École Inclusive" class="logo-img">
   <div class="header-right hidden" id="hdr-ctrl">
+    <button class="btn btn-grey btn-sm" id="btn-home" onclick="App.goHome()">Accueil</button>
     <span id="hdr-user"></span>
     <button class="btn btn-grey btn-sm" id="btn-logout" onclick="App.logout()">Déconnexion</button>
     <button class="btn btn-pink btn-sm" id="btn-mode" onclick="App.toggleMode()">Mode élève</button>
@@ -176,6 +177,21 @@ body.ease .btn, body.ease input, body.ease select, body.ease .act-btn { font-fam
     <p class="login-hint hidden" id="l-signin-hint">Déjà un compte ? <a href="#" onclick="App.toggleSignup();return false;" style="color:var(--pink-dark);">Se connecter</a></p>
     <p class="login-hint" id="l-forgot-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink-dark);">Mot de passe oublié ?</a></p>
     <p class="login-hint hidden" id="l-reset-cancel-hint"><a href="#" onclick="App.toggleReset();return false;" style="color:var(--pink-dark);">← Retour à la connexion</a></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ ACCUEIL (depuis le bouton « Accueil » de l'en-tête) -->
+<div class="screen" id="sc-home">
+  <div class="hero">
+    <h1>Droite Graduée</h1>
+    <p class="hero-lead">Placer des nombres sur une droite graduée : activités à projeter sur un TBI ou à faire sur l'écran d'un élève.</p>
+    <ul class="hero-list">
+      <li>① Estimation : placer une pièce-nombre sur la droite.</li>
+      <li>② Apprentissage : poser des blocs unité sur plusieurs droites.</li>
+      <li>③ Mix : placer un même nombre sur plusieurs droites.</li>
+    </ul>
+    <p><a href="https://portail-plai.vercel.app" target="_blank" rel="noopener">Mode d'emploi sur le portail PLAI</a></p>
+    <button class="btn btn-pink" onclick="App.backFromHome()">← Retour à la configuration</button>
   </div>
 </div>
 
