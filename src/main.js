@@ -125,11 +125,6 @@ const App = {
     await supabase.auth.signOut();
   },
 
-  goStudent(){
-    this._show('sc-student');
-    this.mode = 'student';
-  },
-
   toggleMode(){
     if(this.mode==='teacher'){
       this.mode='student';
