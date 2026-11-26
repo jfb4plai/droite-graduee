@@ -9,7 +9,7 @@
   --pink: #e91e8c;       /* décoratif : bordures, tracés */
   --pink-dark: #c2185b;  /* texte et fonds de boutons : contraste ≥ 4,5:1 avec le blanc */
   --dark: #1a1a1a;
-  --light: #f8f8f8;
+  --light: #faf9f7;
   --border: #ddd;
   --green: #2e7d32;
 }
@@ -43,6 +43,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 /* ── BUTTONS ── */
 .btn { padding: 9px 18px; min-height: 44px; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: opacity .15s; }
 .btn:hover { opacity: .82; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn-pink  { background: var(--pink-dark); color: #fff; }
 .btn-grey  { background: #eee; color: var(--dark); }
 .btn-green { background: var(--green); color: #fff; }
@@ -111,6 +112,30 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 .dialog p { color: #666; margin-bottom: 20px; }
 
 .hidden { display: none !important; }
+
+/* ── ACCUEIL ── */
+.hero { max-width: 640px; margin: 36px auto 0; padding: 0 20px; }
+.hero h1 { font-size: 1.9rem; margin-bottom: 8px; }
+.hero .hero-lead { font-size: 1.15rem; margin-bottom: 12px; }
+.hero-list { margin: 0 0 12px 22px; font-size: 1rem; }
+.hero-list li { margin-bottom: 4px; }
+.hero p { font-size: 1rem; }
+.hero a { color: var(--pink-dark); font-weight: 600; display: inline-block; padding: 10px 0; min-height: 44px; }
+#sc-login .login-wrap { margin-top: 24px; }
+.student-mode .ease-btn { display: none; }
+
+/* ── LECTURE FACILITÉE ── */
+.ease-btn { position: fixed; right: 14px; bottom: 14px; z-index: 150; min-height: 44px; padding: 8px 14px; border: 2px solid #595959; border-radius: 22px; background: #fff; color: #1a1a1a; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.ease-btn[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
+html.ease { font-size: 112.5%; }  /* les tailles en rem (presque tout) grandissent de 12,5 % */
+body.ease { font-family: Arial, Helvetica, sans-serif; line-height: 1.7; letter-spacing: .02em; }
+body.ease .btn, body.ease input, body.ease select, body.ease .act-btn { font-family: Arial, Helvetica, sans-serif; letter-spacing: .02em; }
+
+/* ── MOUVEMENT RÉDUIT : pas de clignotement si le système le demande (la bonne position reste affichée, sans clignoter) ── */
+@media (prefers-reduced-motion: reduce) {
+  .blink { animation: none !important; }
+  .btn { transition: none; }
+}
 @media(max-width:700px) { .t-layout { grid-template-columns: 1fr; } .cfg-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -128,6 +153,17 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
 
 <!-- ═══════════════════════════════════════════════════════════ LOGIN -->
 <div class="screen active" id="sc-login">
+  <div class="hero">
+    <h1>Droite Graduée</h1>
+    <p class="hero-lead">Placer des nombres sur une droite graduée : activités à projeter sur un TBI ou à faire sur l'écran d'un élève.</p>
+    <ul class="hero-list">
+      <li>① Estimation : placer une pièce-nombre sur la droite.</li>
+      <li>② Apprentissage : poser des blocs unité sur plusieurs droites.</li>
+      <li>③ Mix : placer un même nombre sur plusieurs droites.</li>
+    </ul>
+    <p>Réservé aux enseignants : se connecter, régler l'activité, puis la lancer.</p>
+    <a href="https://portail-plai.vercel.app" target="_blank" rel="noopener">Mode d'emploi sur le portail PLAI</a>
+  </div>
   <div class="login-wrap">
     <h2 id="l-title">Connexion Enseignant</h2>
     <div class="form-group"><label for="l-user">Email</label><input id="l-user" type="email" placeholder="prenom.nom@ecole.be"/></div>
@@ -405,6 +441,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); col
     <button class="btn btn-pink" onclick="document.getElementById('end-overlay').classList.add('hidden')">Fermer</button>
   </div>
 </div>
+
+<button class="ease-btn" id="btn-ease" aria-pressed="false" onclick="App.toggleEase()" title="Police Arial, texte plus grand, interlignes plus larges">Aa Lecture facilitée</button>
 
 <script type="module" src="/src/main.js"></script>
 </body>

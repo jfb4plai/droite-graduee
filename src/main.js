@@ -1,5 +1,5 @@
 'use strict';
-import { supabase } from './supabase.js';
+import { supabase, supabaseOk } from './supabase.js';
 
 // ─────────────────────────────────────────────────
 // HELPERS
@@ -41,6 +41,24 @@ const App = {
   _signupMode: false,
   _resetMode: false,
   passwordRecovery: false,
+
+  // « Lecture facilitée » : police Arial, texte plus grand, interlignes et espacement des lettres augmentés ; mémorisé sur l'appareil
+  initEase(){
+    let on = false;
+    try{ on = localStorage.getItem('dg-ease') === '1'; }catch(e){}
+    this._setEase(on);
+  },
+  toggleEase(){
+    const on = !document.documentElement.classList.contains('ease');
+    try{ localStorage.setItem('dg-ease', on ? '1' : '0'); }catch(e){}
+    this._setEase(on);
+  },
+  _setEase(on){
+    document.body.classList.toggle('ease', on);
+    document.documentElement.classList.toggle('ease', on);
+    const b = $id('btn-ease');
+    if(b) b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  },
 
   async init(){
     // Vérifier la session existante
@@ -1581,7 +1599,14 @@ const A3 = {
 // BOOT
 // ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
-  App.init();
+  App.initEase();
+  if(supabaseOk){
+    App.init();
+  } else {
+    // Variables Supabase absentes : message clair au lieu d'un écran blanc, boutons de connexion désactivés
+    App._err("Connexion indisponible : l'application n'est pas configurée (variables Supabase absentes). Prévenir la personne qui gère l'application.");
+    ['l-login-btn','l-signup-btn','l-reset-btn'].forEach(id=>{ const b=$id(id); if(b) b.disabled=true; });
+  }
   labelize();
   $id('l-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') App.login(); });
 });
