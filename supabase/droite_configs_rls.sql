@@ -3,8 +3,8 @@
 -- À EXÉCUTER PAR JF dans l'éditeur SQL. Ce fichier n'a pas été exécuté par Claude.
 -- Il ne crée aucune table : il suppose les colonnes user_id, name, data lues par src/main.js (cfgStore, saveCfg, delCfg).
 --
--- État constaté le 2026-11-26 (capture de JF) : une politique « users own configs » existe déjà
--- (ALL, using et with check = auth.uid() = user_id). Il reste à vérifier que RLS est ACTIVÉ.
+-- État vérifié par JF le 2026-11-26 : une politique « users own configs » existe (ALL, using et with check
+-- = auth.uid() = user_id) ET relrowsecurity = true. RIEN À EXÉCUTER : ce fichier sert de mémoire et de procédure de contrôle.
 
 -- 1) VÉRIFICATION (lecture seule). Lancer chaque requête séparément (sélectionner la ligne, Ctrl+Entrée).
 --    relrowsecurity doit valoir true.
